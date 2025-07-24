@@ -40,7 +40,7 @@ const defaultSchedule = {
 
 
 let schedule = JSON.parse(JSON.stringify(defaultSchedule));
-let currentPeriod = "morning";
+let currentPeriod = detectCurrentPeriod();
 let editIndex = null;
 let audioContext;
 let bellSound;
@@ -198,8 +198,33 @@ function updateSignalUI(currentSignal, nextSignal) {
   }
 }
 
+function detectCurrentPeriod() {
+  const now = new Date();
+  const hours = now.getHours();
+
+  if (hours >= 6 && hours < 13) {
+    return "morning";
+  } else if (hours >= 13 && hours < 19) {
+    return "afternoon";
+  } else {
+    return "night"; // ou null, dependendo de como você quer tratar esse caso
+  }
+}
+
+
+
 // Renderizar tabela de horários
 function renderScheduleTable() {
+  if (!schedule[currentPeriod]) {
+  document.getElementById("scheduleTable").innerHTML = `
+    <tr><td colspan="3" class="text-center text-gray-500 py-4">Fora do horário escolar</td></tr>
+  `;
+  document.getElementById("periodIndicator").textContent = "Fora do horário escolar";
+  return;
+  }
+
+
+
   const tableBody = document.getElementById("scheduleTable");
   tableBody.innerHTML = "";
 
