@@ -37,6 +37,18 @@ const defaultSchedule = {
     { time: "16:40", name: "Saída", duration: 5 },
   ]
 };
+function detectCurrentPeriod() {
+  const now = new Date();
+  const hours = now.getHours();
+
+  if (hours >= 6 && hours < 13) {
+    return "morning";
+  } else if (hours >= 13 && hours < 19) {
+    return "afternoon";
+  } else {
+    return "night";
+  }
+}
 
 
 let schedule = JSON.parse(JSON.stringify(defaultSchedule));
@@ -198,18 +210,7 @@ function updateSignalUI(currentSignal, nextSignal) {
   }
 }
 
-function detectCurrentPeriod() {
-  const now = new Date();
-  const hours = now.getHours();
 
-  if (hours >= 6 && hours < 13) {
-    return "morning";
-  } else if (hours >= 13 && hours < 19) {
-    return "afternoon";
-  } else {
-    return "night"; // ou null, dependendo de como você quer tratar esse caso
-  }
-}
 
 
 
