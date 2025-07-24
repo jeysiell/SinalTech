@@ -58,32 +58,41 @@ function saveSchedule() {
 function initAudio() {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    // Criar um oscilador simples para o sino
-    const oscillator = audioContext.createOscillator();
+
+    const audioElement = new Audio("sino.mp3"); // Arquivo de música, deve estar na mesma pasta
+    audioElement.crossOrigin = "anonymous"; // Evita erros se for carregado de outro domínio
+
+    const source = audioContext.createMediaElementSource(audioElement);
     const gainNode = audioContext.createGain();
 
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(
-      440,
-      audioContext.currentTime + 0.5
-    );
+    // Configura o ganho inicial
+    gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
 
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(
-      0.001,
-      audioContext.currentTime + 0.5
-    );
+    // Fade in: 0s até 1s → de 0 a 1
+    gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 1);
 
-    oscillator.connect(gainNode);
+    // Fade out: começa em 5s e termina em 6s → de 1 a 0
+    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + 5);
+    gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + 6);
+
+    // Conectar os nós
+    source.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.6);
+    // Tocar música
+    audioElement.play();
+
+    // Parar e desconectar após 7s para liberar recursos
+    setTimeout(() => {
+      audioElement.pause();
+      source.disconnect();
+      gainNode.disconnect();
+    }, 7000);
   } catch (e) {
-    console.error("Erro ao inicializar áudio:", e);
+    console.error("Erro ao tocar áudio:", e);
   }
 }
+
 
 // Atualizar relógio
 function updateClock() {
@@ -132,6 +141,21 @@ function checkSignalTimes(now) {
     const [hours, minutes] = currentSignal.time.split(":");
     if (now.getHours() == hours && now.getMinutes() == minutes) {
       initAudio();
+    }
+  }
+
+  // Se não houver próximo sinal, mudar para o próximo período automaticamente
+  if (!nextSignal && currentSignal && now.getSeconds() === 0) {
+    const periodOrder = ["morning", "afternoon", "night"];
+    const currentIndex = periodOrder.indexOf(currentPeriod);
+    const nextPeriod = periodOrder[currentIndex + 1];
+
+    if (nextPeriod) {
+      currentPeriod = nextPeriod;
+      renderScheduleTable();
+      renderConfigForm();
+
+      console.log(`Mudando automaticamente para o período: ${nextPeriod}`);
     }
   }
 }
