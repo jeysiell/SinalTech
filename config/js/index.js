@@ -228,7 +228,6 @@ function renderScheduleTable() {
   const periodNames = {
     morning: "Manhã",
     afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
-    night: "Noite",
   };
 
   document.getElementById("periodIndicator").textContent =
