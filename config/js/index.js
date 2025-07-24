@@ -13,6 +13,7 @@ const defaultSchedule = {
     { time: "12:10", name: "Saída", duration: 5 },
   ],
   afternoon: [
+    // Segunda a quinta-feira
     { time: "13:00", name: "Entrada", duration: 5 },
     { time: "13:05", name: "1ª Aula", duration: 45 },
     { time: "13:50", name: "2ª Aula", duration: 45 },
@@ -24,16 +25,19 @@ const defaultSchedule = {
     { time: "17:25", name: "6ª Aula", duration: 45 },
     { time: "18:10", name: "Saída", duration: 5 },
   ],
-  night: [
-    { time: "19:00", name: "Entrada", duration: 5 },
-    { time: "19:05", name: "1ª Aula", duration: 45 },
-    { time: "19:50", name: "2ª Aula", duration: 45 },
-    { time: "20:35", name: "Intervalo", duration: 20 },
-    { time: "20:55", name: "3ª Aula", duration: 45 },
-    { time: "21:40", name: "4ª Aula", duration: 45 },
-    { time: "22:25", name: "Saída", duration: 5 },
-  ],
+  afternoonFriday: [
+    // Sexta-feira tarde com horários diferentes
+    { time: "13:00", name: "Entrada", duration: 5 },
+    { time: "13:05", name: "1ª Aula", duration: 40 },
+    { time: "13:45", name: "2ª Aula", duration: 40 },
+    { time: "14:25", name: "Intervalo", duration: 15 },
+    { time: "14:40", name: "3ª Aula", duration: 40 },
+    { time: "15:20", name: "4ª Aula", duration: 40 },
+    { time: "16:00", name: "5ª Aula", duration: 40 },
+    { time: "16:40", name: "Saída", duration: 5 },
+  ]
 };
+
 
 let schedule = JSON.parse(JSON.stringify(defaultSchedule));
 let currentPeriod = "morning";
@@ -106,7 +110,16 @@ function updateClock() {
 
 // Verificar horários dos sinais
 function checkSignalTimes(now) {
-  const currentPeriodSignals = schedule[currentPeriod];
+  // Verifica se é sexta-feira (5 = sexta)
+  const dayOfWeek = now.getDay();
+
+  // Se for sexta à tarde, troca o período dinamicamente
+  let effectivePeriod = currentPeriod;
+  if (currentPeriod === "afternoon" && dayOfWeek === 5) {
+    effectivePeriod = "afternoonFriday";
+  }
+
+  const currentPeriodSignals = schedule[effectivePeriod];
   const currentTime = now.getHours() * 60 + now.getMinutes();
   let currentSignal = null;
   let nextSignal = null;
@@ -116,13 +129,11 @@ function checkSignalTimes(now) {
     const [hours, minutes] = signal.time.split(":").map(Number);
     const signalTime = hours * 60 + minutes;
 
-    // Adicionar a duração para pegar o tempo final do sinal
     const signalEndTime = signalTime + signal.duration;
 
     if (currentTime >= signalTime && currentTime < signalEndTime) {
       currentSignal = signal;
 
-      // Definir próximo sinal como o próximo na lista, se houver
       if (i < currentPeriodSignals.length - 1) {
         nextSignal = currentPeriodSignals[i + 1];
       }
@@ -133,10 +144,8 @@ function checkSignalTimes(now) {
     }
   }
 
-  // Atualizar UI
   updateSignalUI(currentSignal, nextSignal);
 
-  // Tocar sinal se for o minuto exato
   if (currentSignal && now.getSeconds() === 0) {
     const [hours, minutes] = currentSignal.time.split(":");
     if (now.getHours() == hours && now.getMinutes() == minutes) {
@@ -144,9 +153,9 @@ function checkSignalTimes(now) {
     }
   }
 
-  // Se não houver próximo sinal, mudar para o próximo período automaticamente
+  // Mudança automática de período
   if (!nextSignal && currentSignal && now.getSeconds() === 0) {
-    const periodOrder = ["morning", "afternoon", "night"];
+    const periodOrder = ["morning", "afternoon"]; // Removido "night"
     const currentIndex = periodOrder.indexOf(currentPeriod);
     const nextPeriod = periodOrder[currentIndex + 1];
 
@@ -159,6 +168,7 @@ function checkSignalTimes(now) {
     }
   }
 }
+
 
 // Atualizar UI dos sinais
 function updateSignalUI(currentSignal, nextSignal) {
@@ -193,29 +203,38 @@ function renderScheduleTable() {
   const tableBody = document.getElementById("scheduleTable");
   tableBody.innerHTML = "";
 
-  const currentSignals = schedule[currentPeriod];
+  // Verifica se é sexta-feira
+  const dayOfWeek = new Date().getDay();
+  const isFriday = dayOfWeek === 5;
 
-  currentSignals.forEach((signal, index) => {
+  // Usa o horário correto com base na sexta-feira
+  const signalsToRender =
+    currentPeriod === "afternoon" && isFriday
+      ? schedule["afternoonFriday"]
+      : schedule[currentPeriod];
+
+  signalsToRender.forEach((signal, index) => {
     const row = document.createElement("tr");
     row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
     row.innerHTML = `
-                    <td class="py-3 px-4 text-gray-700">${signal.time}</td>
-                    <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
-                    <td class="py-3 px-4 text-gray-700">${signal.duration} min</td>
-                `;
+      <td class="py-3 px-4 text-gray-700">${signal.time}</td>
+      <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
+      <td class="py-3 px-4 text-gray-700">${signal.duration} min</td>
+    `;
     tableBody.appendChild(row);
   });
 
   // Atualizar indicador de período
   const periodNames = {
     morning: "Manhã",
-    afternoon: "Tarde",
+    afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
     night: "Noite",
   };
-  document.getElementById(
-    "periodIndicator"
-  ).textContent = `Período: ${periodNames[currentPeriod]}`;
+
+  document.getElementById("periodIndicator").textContent =
+    `Período: ${periodNames[currentPeriod]}`;
 }
+
 
 // Renderizar formulário de configuração
 function renderConfigForm() {
@@ -286,7 +305,17 @@ function saveConfiguration() {
 function switchPeriod(period) {
   currentPeriod = period;
 
-  // Atualizar botões ativos
+  const dayOfWeek = new Date().getDay();
+  const isFriday = dayOfWeek === 5;
+
+  // Atualizar nome do período no painel
+  const periodNames = {
+    morning: "Manhã",
+    afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
+    afternoonFriday: "Tarde (Sexta-feira)",
+  };
+
+  // Atualizar botão ativo
   document.querySelectorAll(".period-btn").forEach((btn) => {
     if (btn.dataset.period === period) {
       btn.classList.remove("bg-gray-200", "text-gray-700");
@@ -297,8 +326,14 @@ function switchPeriod(period) {
     }
   });
 
+  // Atualiza indicador visual (Painel principal)
+  document.getElementById("periodIndicator").textContent =
+    "Período: " + periodNames[period];
+
+  // Atualiza formulário de configuração
   renderConfigForm();
 }
+
 
 // Inicializar aplicação
 function initApp() {
