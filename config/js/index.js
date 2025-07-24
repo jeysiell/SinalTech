@@ -59,7 +59,7 @@ function initAudio() {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    const audioElement = new Audio("sino.mp3"); // Arquivo de música, deve estar na mesma pasta
+    const audioElement = new Audio("../assets/audio/sinal.mp3"); // Arquivo de música, deve estar na mesma pasta
     audioElement.crossOrigin = "anonymous"; // Evita erros se for carregado de outro domínio
 
     const source = audioContext.createMediaElementSource(audioElement);
