@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administração de Horários</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="./assets/css/index.css">
+    <link rel="icon" href="./assets/img/logo.ico" type="image/x-icon">
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="bg-wave pb-32">
+        <header class="container mx-auto px-4 py-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Administração de Horários</h1>
+        </header>
+
+        <main class="container mx-auto px-4">
+            <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Gerenciar Horários</h2>
+                    <button id="configBtn" class="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition">
+                        <i class="fas fa-cog mr-2"></i>Configurar
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="py-3 px-4 text-left font-medium text-gray-700">Horário</th>
+                                <th class="py-3 px-4 text-left font-medium text-gray-700">Sinal</th>
+                                <th class="py-3 px-4 text-left font-medium text-gray-700">Duração</th>
+                                <th class="py-3 px-4 text-left font-medium text-gray-700">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200" id="scheduleTable">
+                            <!-- Aqui serão inseridas as linhas da tabela via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal de Configuração -->
+            <div id="configModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+                <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">Configurar Horários Escolares</h3>
+                            <button id="closeConfigBtn" class="text-gray-500 hover:text-gray-700" type="button">
+                                <i class="fas fa-times text-2xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="mb-6">
+                            <div class="flex justify-center space-x-4 mb-4">
+                                <button class="period-btn px-4 py-2 rounded-lg bg-blue-600 text-white" data-period="morning">Manhã</button>
+                                <button class="period-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700" data-period="afternoon">Tarde</button>
+                            </div>
+
+                            <div id="periodConfig" class="space-y-4">
+                                <!-- Configurações de horários serão inseridas aqui -->
+                            </div>
+
+                            <button id="addTimeBtn" class="mt-4 px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition">
+                                <i class="fas fa-plus mr-2"></i>Adicionar Horário
+                            </button>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                            <button id="cancelConfigBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">Cancelar</button>
+                            <button id="saveConfigBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Salvar Configurações</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="bg-gray-100 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-600">
+            <p>Desenvolvido por Jeysiell Felipe</p>
+        </div>
+    </footer>
+    <script src="./config/js/admin.js"></script>
+</body>
+</html>

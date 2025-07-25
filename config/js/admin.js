@@ -1,0 +1,183 @@
+let schedule = {}; // Inicializa a variável schedule como um objeto vazio
+let currentPeriod = null; // Inicializa currentPeriod como null
+let editIndex = null; // Para rastrear o índice do horário a ser editado
+
+// Recuperar dados da API
+function loadSchedule() {
+  fetch('https://sinal.onrender.com/api/schedule')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erro ao carregar horários: ' + response.statusText);
+      }
+      return response.json();
+    })
+    .then(data => {
+      schedule = data; // Atribui os dados da API à variável schedule
+      renderScheduleTable(); // Renderiza a tabela de horários
+      renderConfigForm(); // Renderiza o formulário de configuração
+    })
+    .catch(error => {
+      console.error('Erro ao carregar horários:', error);
+      schedule = {}; // Se houver erro, mantém schedule como um objeto vazio
+      renderScheduleTable(); // Renderiza a tabela de horários
+    });
+}
+
+// Renderizar tabela de horários
+function renderScheduleTable() {
+  const tableBody = document.getElementById("scheduleTable");
+  tableBody.innerHTML = "";
+
+  const periods = ["morning", "afternoon", "afternoonFriday"];
+  periods.forEach(period => {
+    const signalsToRender = schedule[period] || []; // Usa um array vazio se não houver sinais
+
+    signalsToRender.forEach((signal, index) => {
+      const row = document.createElement("tr");
+      row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
+      row.innerHTML = `
+        <td class="py-3 px-4 text-gray-700">${signal.time}</td>
+        <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
+        <td class="py-3 px-4 text-gray-700">${signal.duration} min</td>
+        <td class="py-3 px-4 text-gray-700">
+          <button class="edit-btn text-blue-600" data-index="${index}" data-period="${period}">Editar</button>
+          <button class="delete-btn text-red-600" data-index="${index}" data-period="${period}">Excluir</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  });
+}
+
+// Renderizar formulário de configuração
+function renderConfigForm() {
+  const periodConfig = document.getElementById("periodConfig");
+  periodConfig.innerHTML = "";
+
+  const currentSignals = schedule[currentPeriod] || []; // Usa um array vazio se não houver sinais
+
+  if (currentSignals.length === 0) {
+    periodConfig.innerHTML =
+      '<p class="text-gray-500">Nenhum horário cadastrado para este período.</p>';
+    return;
+  }
+
+  currentSignals.forEach((signal, index) => {
+    const signalDiv = document.createElement("div");
+    signalDiv.className =
+      "bg-gray-50 p-4 rounded-lg border border-gray-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center";
+
+    signalDiv.innerHTML = `
+      <div class="sm:col-span-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Horário</label>
+        <input type="time" value="${signal.time}" class="time-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="sm:col-span-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Sinal</label>
+        <input type="text" value="${signal.name}" class="name-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="sm:col-span-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
+        <input type="number" min="1" value="${signal.duration}" class="duration-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="sm:col-span-2 flex space-x-2 justify-end">
+        <button class="edit-btn px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition" data-index="${index}">
+          <i class="fas fa-save"></i>
+        </button>
+        <button class="delete-btn px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition" data-index="${index}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+
+    periodConfig.appendChild(signalDiv);
+  });
+}
+
+// Adicionar novo horário
+function addNewTime() {
+  const newSignal = {
+    time: "00:00",
+    name: "Novo Sinal",
+    duration: 1,
+  };
+  schedule[currentPeriod].push(newSignal);
+  renderConfigForm();
+  document.querySelector("#periodConfig").lastElementChild.scrollIntoView();
+}
+
+// Salvar configurações
+function saveConfiguration() {
+  fetch('https://sinal.onrender.com/api/schedule', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(schedule),
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erro ao salvar horários: ' + response.statusText);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Horários salvos com sucesso:', data);
+      renderScheduleTable(); // Atualiza a tabela após salvar
+      document.getElementById("configModal").classList.add("hidden");
+    })
+    .catch(error => {
+      console.error('Erro ao salvar horários:', error);
+    });
+}
+
+// Inicializar aplicação
+function initApp() {
+  loadSchedule();
+
+  document.getElementById("configBtn").addEventListener("click", () => {
+    document.getElementById("configModal").classList.remove("hidden");
+    renderConfigForm();
+  });
+
+  document.getElementById("closeConfigBtn").addEventListener("click", () => {
+    document.getElementById("configModal").classList.add("hidden");
+  });
+
+  document.getElementById("cancelConfigBtn").addEventListener("click", () => {
+    loadSchedule(); // Reverte quaisquer alterações não salvas
+    document.getElementById("configModal").classList.add("hidden");
+  });
+
+  document.getElementById("saveConfigBtn").addEventListener("click", saveConfiguration);
+  document.getElementById("addTimeBtn").addEventListener("click", addNewTime);
+
+  document.getElementById("scheduleTable").addEventListener("click", (e) => {
+    if (e.target.closest(".delete-btn")) {
+      const index = e.target.closest(".delete-btn").dataset.index;
+      const period = e.target.closest("tr").querySelector(".period-btn").dataset.period;
+      schedule[period].splice(index, 1);
+      renderScheduleTable();
+    }
+  });
+
+  document.getElementById("periodConfig").addEventListener("change", (e) => {
+    if (
+      e.target.closest(".time-input") ||
+      e.target.closest(".name-input") ||
+      e.target.closest(".duration-input")
+    ) {
+      const row = e.target.closest(".bg-gray-50");
+      const index = Array.from(row.parentNode.children).indexOf(row);
+
+      schedule[currentPeriod][index] = {
+        time: row.querySelector(".time-input").value,
+        name: row.querySelector(".name-input").value,
+        duration: parseInt(row.querySelector(".duration-input").value),
+      };
+    }
+  });
+}
+
+// Iniciar quando o DOM estiver carregado
+document.addEventListener("DOMContentLoaded", initApp);
