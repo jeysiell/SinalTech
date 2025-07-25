@@ -248,8 +248,8 @@ function addNewTime() {
 
 // Salvar configurações
 function saveConfiguration() {
-  saveSchedule();
-  renderScheduleTable();
+  // Removido o código para salvar, pois não há uma função saveSchedule definida
+  renderScheduleTable(); // Apenas renderiza a tabela após a configuração
   document.getElementById("configModal").classList.add("hidden");
 }
 
