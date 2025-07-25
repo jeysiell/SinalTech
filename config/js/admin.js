@@ -155,7 +155,7 @@ function initApp() {
   document.getElementById("scheduleTable").addEventListener("click", (e) => {
     if (e.target.closest(".delete-btn")) {
       const index = e.target.closest(".delete-btn").dataset.index;
-      const period = e.target.closest("tr").querySelector(".period-btn").dataset.period;
+      const period = e.target.closest("tr").querySelector(".edit-btn").dataset.period;
       schedule[period].splice(index, 1);
       renderScheduleTable();
     }
