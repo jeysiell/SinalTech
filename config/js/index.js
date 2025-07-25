@@ -1,42 +1,29 @@
-// Dados padrão dos horários (será salvo no localStorage)
-const defaultSchedule = {
-  morning: [
-    { time: "07:00", name: "Entrada", duration: 5 },
-    { time: "07:05", name: "1ª Aula", duration: 45 },
-    { time: "07:50", name: "2ª Aula", duration: 45 },
-    { time: "08:35", name: "Intervalo", duration: 20 },
-    { time: "08:55", name: "3ª Aula", duration: 45 },
-    { time: "09:40", name: "4ª Aula", duration: 45 },
-    { time: "10:25", name: "Intervalo", duration: 15 },
-    { time: "10:40", name: "5ª Aula", duration: 45 },
-    { time: "11:25", name: "6ª Aula", duration: 45 },
-    { time: "12:10", name: "Saída", duration: 5 },
-  ],
-  afternoon: [
-    // Segunda a quinta-feira
-    { time: "13:00", name: "Entrada", duration: 5 },
-    { time: "13:05", name: "1ª Aula", duration: 45 },
-    { time: "13:50", name: "2ª Aula", duration: 45 },
-    { time: "14:35", name: "Intervalo", duration: 20 },
-    { time: "14:55", name: "3ª Aula", duration: 45 },
-    { time: "15:40", name: "4ª Aula", duration: 45 },
-    { time: "16:25", name: "Intervalo", duration: 15 },
-    { time: "16:40", name: "5ª Aula", duration: 45 },
-    { time: "17:25", name: "6ª Aula", duration: 45 },
-    { time: "18:10", name: "Saída", duration: 5 },
-  ],
-  afternoonFriday: [
-    // Sexta-feira tarde com horários diferentes
-    { time: "13:00", name: "Entrada", duration: 5 },
-    { time: "13:05", name: "1ª Aula", duration: 40 },
-    { time: "13:45", name: "2ª Aula", duration: 40 },
-    { time: "14:25", name: "Intervalo", duration: 15 },
-    { time: "14:40", name: "3ª Aula", duration: 40 },
-    { time: "15:20", name: "4ª Aula", duration: 40 },
-    { time: "16:00", name: "5ª Aula", duration: 40 },
-    { time: "16:40", name: "Saída", duration: 5 },
-  ]
-};
+let schedule = {}; // Inicializa a variável schedule como um objeto vazio
+let currentPeriod = null; // Inicializa currentPeriod como null
+let editIndex = null;
+let audioContext;
+
+// Recuperar dados da API
+function loadSchedule() {
+  fetch('https://sinal.onrender.com/api/schedule')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erro ao carregar horários: ' + response.statusText);
+      }
+      return response.json();
+    })
+    .then(data => {
+      schedule = data; // Atribui os dados da API à variável schedule
+      currentPeriod = detectCurrentPeriod(); // Define o período atual com base na hora
+      renderScheduleTable(); // Renderiza a tabela de horários
+    })
+    .catch(error => {
+      console.error('Erro ao carregar horários:', error);
+      schedule = {}; // Se houver erro, mantém schedule como um objeto vazio
+      renderScheduleTable(); // Renderiza a tabela de horários
+    });
+}
+
 function detectCurrentPeriod() {
   const now = new Date();
   const hours = now.getHours();
@@ -50,55 +37,24 @@ function detectCurrentPeriod() {
   }
 }
 
-
-let schedule = JSON.parse(JSON.stringify(defaultSchedule));
-let currentPeriod = detectCurrentPeriod();
-let editIndex = null;
-let audioContext;
-let bellSound;
-
-// Recuperar dados salvos do localStorage
-function loadSchedule() {
-  const savedSchedule = localStorage.getItem("schoolSchedule");
-  if (savedSchedule) {
-    schedule = JSON.parse(savedSchedule);
-  }
-}
-
-// Salvar dados no localStorage
-function saveSchedule() {
-  localStorage.setItem("schoolSchedule", JSON.stringify(schedule));
-}
-
 // Inicializar áudio
 function initAudio() {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    const audioElement = new Audio("sino.mp3"); // Arquivo de música, deve estar na mesma pasta
-    audioElement.crossOrigin = "anonymous"; // Evita erros se for carregado de outro domínio
+    const audioElement = new Audio("sino.mp3");
+    audioElement.crossOrigin = "anonymous";
 
     const source = audioContext.createMediaElementSource(audioElement);
     const gainNode = audioContext.createGain();
-
-    // Configura o ganho inicial
     gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
-
-    // Fade in: 0s até 1s → de 0 a 1
     gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 1);
-
-    // Fade out: começa em 5s e termina em 6s → de 1 a 0
     gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + 5);
     gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + 6);
 
-    // Conectar os nós
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
-
-    // Tocar música
     audioElement.play();
 
-    // Parar e desconectar após 7s para liberar recursos
     setTimeout(() => {
       audioElement.pause();
       source.disconnect();
@@ -109,29 +65,24 @@ function initAudio() {
   }
 }
 
-
 // Atualizar relógio
 function updateClock() {
   const now = new Date();
   const timeStr = now.toLocaleTimeString();
   document.getElementById("currentTime").textContent = timeStr;
-
-  // Verificar se é hora de tocar o sinal
   checkSignalTimes(now);
 }
 
 // Verificar horários dos sinais
 function checkSignalTimes(now) {
-  // Verifica se é sexta-feira (5 = sexta)
   const dayOfWeek = now.getDay();
-
-  // Se for sexta à tarde, troca o período dinamicamente
   let effectivePeriod = currentPeriod;
+
   if (currentPeriod === "afternoon" && dayOfWeek === 5) {
     effectivePeriod = "afternoonFriday";
   }
 
-  const currentPeriodSignals = schedule[effectivePeriod];
+  const currentPeriodSignals = schedule[effectivePeriod] || []; // Usa um array vazio se não houver sinais
   const currentTime = now.getHours() * 60 + now.getMinutes();
   let currentSignal = null;
   let nextSignal = null;
@@ -140,12 +91,10 @@ function checkSignalTimes(now) {
     const signal = currentPeriodSignals[i];
     const [hours, minutes] = signal.time.split(":").map(Number);
     const signalTime = hours * 60 + minutes;
-
     const signalEndTime = signalTime + signal.duration;
 
     if (currentTime >= signalTime && currentTime < signalEndTime) {
       currentSignal = signal;
-
       if (i < currentPeriodSignals.length - 1) {
         nextSignal = currentPeriodSignals[i + 1];
       }
@@ -165,9 +114,8 @@ function checkSignalTimes(now) {
     }
   }
 
-  // Mudança automática de período
   if (!nextSignal && currentSignal && now.getSeconds() === 0) {
-    const periodOrder = ["morning", "afternoon"]; // Removido "night"
+    const periodOrder = ["morning", "afternoon"];
     const currentIndex = periodOrder.indexOf(currentPeriod);
     const nextPeriod = periodOrder[currentIndex + 1];
 
@@ -175,12 +123,10 @@ function checkSignalTimes(now) {
       currentPeriod = nextPeriod;
       renderScheduleTable();
       renderConfigForm();
-
       console.log(`Mudando automaticamente para o período: ${nextPeriod}`);
     }
   }
 }
-
 
 // Atualizar UI dos sinais
 function updateSignalUI(currentSignal, nextSignal) {
@@ -210,34 +156,18 @@ function updateSignalUI(currentSignal, nextSignal) {
   }
 }
 
-
-
-
-
 // Renderizar tabela de horários
 function renderScheduleTable() {
-  if (!schedule[currentPeriod]) {
-  document.getElementById("scheduleTable").innerHTML = `
-    <tr><td colspan="3" class="text-center text-gray-500 py-4">Fora do horário escolar</td></tr>
-  `;
-  document.getElementById("periodIndicator").textContent = "Fora do horário escolar";
-  return;
-  }
-
-
-
   const tableBody = document.getElementById("scheduleTable");
   tableBody.innerHTML = "";
 
-  // Verifica se é sexta-feira
   const dayOfWeek = new Date().getDay();
   const isFriday = dayOfWeek === 5;
 
-  // Usa o horário correto com base na sexta-feira
   const signalsToRender =
     currentPeriod === "afternoon" && isFriday
-      ? schedule["afternoonFriday"]
-      : schedule[currentPeriod];
+      ? schedule["afternoonFriday"] || [] // Usa um array vazio se não houver sinais
+      : schedule[currentPeriod] || []; // Usa um array vazio se não houver sinais
 
   signalsToRender.forEach((signal, index) => {
     const row = document.createElement("tr");
@@ -250,7 +180,6 @@ function renderScheduleTable() {
     tableBody.appendChild(row);
   });
 
-  // Atualizar indicador de período
   const periodNames = {
     morning: "Manhã",
     afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
@@ -260,13 +189,12 @@ function renderScheduleTable() {
     `Período: ${periodNames[currentPeriod]}`;
 }
 
-
 // Renderizar formulário de configuração
 function renderConfigForm() {
   const periodConfig = document.getElementById("periodConfig");
   periodConfig.innerHTML = "";
 
-  const currentSignals = schedule[currentPeriod];
+  const currentSignals = schedule[currentPeriod] || []; // Usa um array vazio se não houver sinais
 
   if (currentSignals.length === 0) {
     periodConfig.innerHTML =
@@ -280,27 +208,27 @@ function renderConfigForm() {
       "bg-gray-50 p-4 rounded-lg border border-gray-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center";
 
     signalDiv.innerHTML = `
-                    <div class="sm:col-span-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Horário</label>
-                        <input type="time" value="${signal.time}" class="time-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="sm:col-span-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Sinal</label>
-                        <input type="text" value="${signal.name}" class="name-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="sm:col-span-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
-                        <input type="number" min="1" value="${signal.duration}" class="duration-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="sm:col-span-2 flex space-x-2 justify-end">
-                        <button class="edit-btn px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition" data-index="${index}">
-                            <i class="fas fa-save"></i>
-                        </button>
-                        <button class="delete-btn px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition" data-index="${index}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
+      <div class="sm:col-span-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Horário</label>
+        <input type="time" value="${signal.time}" class="time-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="sm:col-span-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Sinal</label>
+        <input type="text" value="${signal.name}" class="name-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="sm:col-span-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
+        <input type="number" min="1" value="${signal.duration}" class="duration-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="sm:col-span-2 flex space-x-2 justify-end">
+        <button class="edit-btn px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition" data-index="${index}">
+          <i class="fas fa-save"></i>
+        </button>
+        <button class="delete-btn px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition" data-index="${index}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
 
     periodConfig.appendChild(signalDiv);
   });
@@ -315,7 +243,6 @@ function addNewTime() {
   });
 
   renderConfigForm();
-  // Rolagem para baixo para mostrar o novo item
   document.querySelector("#periodConfig").lastElementChild.scrollIntoView();
 }
 
@@ -333,14 +260,12 @@ function switchPeriod(period) {
   const dayOfWeek = new Date().getDay();
   const isFriday = dayOfWeek === 5;
 
-  // Atualizar nome do período no painel
   const periodNames = {
     morning: "Manhã",
     afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
     afternoonFriday: "Tarde (Sexta-feira)",
   };
 
-  // Atualizar botão ativo
   document.querySelectorAll(".period-btn").forEach((btn) => {
     if (btn.dataset.period === period) {
       btn.classList.remove("bg-gray-200", "text-gray-700");
@@ -351,27 +276,21 @@ function switchPeriod(period) {
     }
   });
 
-  // Atualiza indicador visual (Painel principal)
   document.getElementById("periodIndicator").textContent =
     "Período: " + periodNames[period];
 
-  // Atualiza formulário de configuração
   renderConfigForm();
 }
-
 
 // Inicializar aplicação
 function initApp() {
   loadSchedule();
 
-  // Atualizar relógio a cada segundo
   updateClock();
   setInterval(updateClock, 1000);
 
-  // Renderizar tabela inicial
   renderScheduleTable();
 
-  // Event Listeners
   document.getElementById("configBtn").addEventListener("click", () => {
     document.getElementById("configModal").classList.remove("hidden");
     renderConfigForm();
@@ -386,17 +305,13 @@ function initApp() {
     document.getElementById("configModal").classList.add("hidden");
   });
 
-  document
-    .getElementById("saveConfigBtn")
-    .addEventListener("click", saveConfiguration);
-
+  document.getElementById("saveConfigBtn").addEventListener("click", saveConfiguration);
   document.getElementById("addTimeBtn").addEventListener("click", addNewTime);
 
   document.querySelectorAll(".period-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchPeriod(btn.dataset.period));
   });
 
-  // Delegated events para os botões dinâmicos do formulário
   document.getElementById("periodConfig").addEventListener("click", (e) => {
     if (e.target.closest(".delete-btn")) {
       const index = e.target.closest(".delete-btn").dataset.index;
@@ -405,7 +320,6 @@ function initApp() {
     }
   });
 
-  // Atualizar quando os valores dos inputs são alterados
   document.getElementById("periodConfig").addEventListener("change", (e) => {
     if (
       e.target.closest(".time-input") ||
