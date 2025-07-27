@@ -96,6 +96,11 @@ function renderConfigForm() {
 
 // Adicionar novo horário
 function addNewTime() {
+  if (!currentPeriod || !schedule[currentPeriod]) {
+    console.error("Período atual não definido ou inválido.");
+    return; // Sai da função se currentPeriod não estiver definido
+  }
+
   const newSignal = {
     time: "00:00",
     name: "Novo Sinal",
@@ -154,12 +159,19 @@ function initApp() {
     .addEventListener("click", saveConfiguration);
   document.getElementById("addTimeBtn").addEventListener("click", addNewTime);
 
+  // Definir currentPeriod ao clicar nos botões de período
+  document.querySelectorAll('.period-btn').forEach(button => {
+    button.addEventListener('click', (e) => {
+      currentPeriod = e.target.dataset.period; // Define o período atual
+      renderConfigForm(); // Renderiza o formulário de configuração para o período selecionado
+    });
+  });
+
   // Excluir horário da TABELA principal
   document.getElementById("scheduleTable").addEventListener("click", (e) => {
     if (e.target.closest(".delete-btn")) {
       const index = e.target.closest(".delete-btn").dataset.index;
-      const period = e.target.closest("tr").querySelector(".edit-btn")
-        .dataset.period;
+      const period = e.target.closest("tr").querySelector(".edit-btn").dataset.period;
       if (schedule[period]) {
         const timeToDelete = schedule[period][index].time; // Obtém o horário a ser excluído
         deleteTime(period, timeToDelete); // Chama a função de exclusão
