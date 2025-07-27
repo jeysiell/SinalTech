@@ -4,20 +4,20 @@ let editIndex = null; // Para rastrear o índice do horário a ser editado
 
 // Recuperar dados da API
 function loadSchedule() {
-  fetch('https://sinal.onrender.com/api/schedule')
-    .then(response => {
+  fetch("https://sinal.onrender.com/api/schedule")
+    .then((response) => {
       if (!response.ok) {
-        throw new Error('Erro ao carregar horários: ' + response.statusText);
+        throw new Error("Erro ao carregar horários: " + response.statusText);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       schedule = data; // Atribui os dados da API à variável schedule
       renderScheduleTable(); // Renderiza a tabela de horários
       renderConfigForm(); // Renderiza o formulário de configuração
     })
-    .catch(error => {
-      console.error('Erro ao carregar horários:', error);
+    .catch((error) => {
+      console.error("Erro ao carregar horários:", error);
       schedule = {}; // Se houver erro, mantém schedule como um objeto vazio
       renderScheduleTable(); // Renderiza a tabela de horários
     });
@@ -29,7 +29,7 @@ function renderScheduleTable() {
   tableBody.innerHTML = "";
 
   const periods = ["morning", "afternoon", "afternoonFriday"];
-  periods.forEach(period => {
+  periods.forEach((period) => {
     const signalsToRender = schedule[period] || []; // Usa um array vazio se não houver sinais
 
     signalsToRender.forEach((signal, index) => {
@@ -108,29 +108,30 @@ function addNewTime() {
 
 // Salvar configurações
 function saveConfiguration() {
-  fetch('https://sinal.onrender.com/api/schedule', {
-    method: 'PUT',
+  fetch("https://sinal.onrender.com/api/schedule", {
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(schedule),
   })
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
-        throw new Error('Erro ao salvar horários: ' + response.statusText);
+        throw new Error("Erro ao salvar horários: " + response.statusText);
       }
       return response.json();
     })
-    .then(data => {
-      console.log('Horários salvos com sucesso:', data);
+    .then((data) => {
+      console.log("Horários salvos com sucesso:", data);
       renderScheduleTable(); // Atualiza a tabela após salvar
       document.getElementById("configModal").classList.add("hidden");
     })
-    .catch(error => {
-      console.error('Erro ao salvar horários:', error);
+    .catch((error) => {
+      console.error("Erro ao salvar horários:", error);
     });
 }
 
+// Inicializar aplicação
 // Inicializar aplicação
 function initApp() {
   loadSchedule();
@@ -149,32 +150,59 @@ function initApp() {
     document.getElementById("configModal").classList.add("hidden");
   });
 
-  document.getElementById("saveConfigBtn").addEventListener("click", saveConfiguration);
+  document
+    .getElementById("saveConfigBtn")
+    .addEventListener("click", saveConfiguration);
   document.getElementById("addTimeBtn").addEventListener("click", addNewTime);
 
+  // Excluir horário da TABELA principal
   document.getElementById("scheduleTable").addEventListener("click", (e) => {
     if (e.target.closest(".delete-btn")) {
       const index = e.target.closest(".delete-btn").dataset.index;
-      const period = e.target.closest("tr").querySelector(".edit-btn").dataset.period;
-      schedule[period].splice(index, 1);
-      renderScheduleTable();
+      const period = e.target.closest("tr").querySelector(".edit-btn")
+        .dataset.period;
+      if (schedule[period]) {
+        schedule[period].splice(index, 1);
+        saveConfiguration(); // Salvar após excluir
+      }
     }
   });
 
-  document.getElementById("periodConfig").addEventListener("change", (e) => {
-    if (
-      e.target.closest(".time-input") ||
-      e.target.closest(".name-input") ||
-      e.target.closest(".duration-input")
-    ) {
-      const row = e.target.closest(".bg-gray-50");
-      const index = Array.from(row.parentNode.children).indexOf(row);
+  // Eventos no formulário de configuração
+  document.getElementById("periodConfig").addEventListener("click", (e) => {
+    const target = e.target.closest("button");
 
-      schedule[currentPeriod][index] = {
-        time: row.querySelector(".time-input").value,
-        name: row.querySelector(".name-input").value,
-        duration: parseInt(row.querySelector(".duration-input").value),
-      };
+    if (target && target.classList.contains("edit-btn")) {
+      const index = target.dataset.index;
+      const row = target.closest(".bg-gray-50");
+      if (row) {
+        const time = row.querySelector(".time-input").value;
+        const name = row.querySelector(".name-input").value;
+        const duration = parseInt(row.querySelector(".duration-input").value);
+
+        schedule[currentPeriod][index] = { time, name, duration };
+        saveConfiguration();
+      }
+    }
+
+    if (target && target.classList.contains("delete-btn")) {
+      const index = target.dataset.index;
+      schedule[currentPeriod].splice(index, 1);
+      saveConfiguration();
+      renderConfigForm(); // Re-renderiza após excluir
+    }
+  });
+
+  // Atualização ao digitar (sem clicar no botão salvar)
+  document.getElementById("periodConfig").addEventListener("change", (e) => {
+    const row = e.target.closest(".bg-gray-50");
+    if (row) {
+      const index = Array.from(row.parentNode.children).indexOf(row);
+      const time = row.querySelector(".time-input").value;
+      const name = row.querySelector(".name-input").value;
+      const duration = parseInt(row.querySelector(".duration-input").value);
+
+      schedule[currentPeriod][index] = { time, name, duration };
     }
   });
 }
