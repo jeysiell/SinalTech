@@ -39,10 +39,6 @@ function renderScheduleTable() {
         <td class="py-3 px-4 text-gray-700">${signal.time}</td>
         <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
         <td class="py-3 px-4 text-gray-700">${signal.duration} min</td>
-        <td class="py-3 px-4 text-gray-700">
-          <button class="edit-btn text-blue-600" data-index="${index}" data-period="${period}">Editar</button>
-          <button class="delete-btn text-red-600" data-index="${index}" data-period="${period}">Excluir</button>
-        </td>
       `;
       tableBody.appendChild(row);
     });
@@ -240,3 +236,16 @@ function deleteTime(period, time) {
 
 // Iniciar quando o DOM estiver carregado
 document.addEventListener("DOMContentLoaded", initApp);
+
+
+function setActive(clickedBtn) {
+    // Remove estilo ativo de todos os botões
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.classList.remove('bg-blue-700', 'text-white', 'shadow-lg');
+      btn.classList.add('bg-gray-200', 'text-gray-700');
+    });
+
+    // Aplica estilo ativo no botão clicado
+    clickedBtn.classList.remove('bg-gray-200', 'text-gray-700');
+    clickedBtn.classList.add('bg-blue-700', 'text-white', 'shadow-lg');
+}

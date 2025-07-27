@@ -31,7 +31,6 @@
                                 <th class="py-3 px-4 text-left font-medium text-gray-700">Horário</th>
                                 <th class="py-3 px-4 text-left font-medium text-gray-700">Sinal</th>
                                 <th class="py-3 px-4 text-left font-medium text-gray-700">Duração</th>
-                                <th class="py-3 px-4 text-left font-medium text-gray-700">Ações</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200" id="scheduleTable">
@@ -54,9 +53,9 @@
 
                         <div class="mb-6">
                             <div class="flex justify-center space-x-4 mb-4">
-                                <button class="period-btn px-4 py-2 rounded-lg bg-blue-600 text-white" data-period="morning">Manhã</button>
-                                <button class="period-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700" data-period="afternoon">Tarde</button>
-                                <button class="period-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700" data-period="afternoonFriday">Tarde de Sexta</button>
+                                <button onclick="setActive(this)" class="period-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:scale-105 transition-transform duration-300 " data-period="morning">Manhã</button>
+                                <button onclick="setActive(this)" class="period-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:scale-105 transition-transform duration-300" data-period="afternoon">Tarde</button>
+                                <button onclick="setActive(this)" class="period-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:scale-105 transition-transform duration-300" data-period="afternoonFriday">Tarde de Sexta</button>
                             </div>
 
                             <div id="periodConfig" class="space-y-4">
