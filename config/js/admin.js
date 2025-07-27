@@ -132,7 +132,6 @@ function saveConfiguration() {
 }
 
 // Inicializar aplicação
-// Inicializar aplicação
 function initApp() {
   loadSchedule();
 
@@ -162,8 +161,8 @@ function initApp() {
       const period = e.target.closest("tr").querySelector(".edit-btn")
         .dataset.period;
       if (schedule[period]) {
-        schedule[period].splice(index, 1);
-        saveConfiguration(); // Salvar após excluir
+        const timeToDelete = schedule[period][index].time; // Obtém o horário a ser excluído
+        deleteTime(period, timeToDelete); // Chama a função de exclusão
       }
     }
   });
@@ -205,6 +204,26 @@ function initApp() {
       schedule[currentPeriod][index] = { time, name, duration };
     }
   });
+}
+
+// Função para excluir horário
+function deleteTime(period, time) {
+  fetch(`https://sinal.onrender.com/api/schedule/${period}/${time}`, {
+    method: "DELETE",
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Erro ao excluir horário: " + response.statusText);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log(data.message);
+      loadSchedule(); // Recarrega a tabela após a exclusão
+    })
+    .catch((error) => {
+      console.error("Erro ao excluir horário:", error);
+    });
 }
 
 // Iniciar quando o DOM estiver carregado
