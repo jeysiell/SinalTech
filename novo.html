@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Sinal Escolar Automático</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --primary: #2563eb;
+      --secondary: #1e40af;
+      --accent: #f59e0b;
+      --dark: #1e293b;
+      --light: #f8fafc;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--light);
+      color: var(--dark);
+    }
+    
+    .signal-animation {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .time-card {
+      transition: all 0.3s ease;
+    }
+    
+    .time-card.active {
+      border-left: 4px solid var(--accent);
+      background-color: rgba(37, 99, 235, 0.1);
+    }
+    
+    .time-card.next {
+      border-left: 4px solid var(--primary);
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+      animation: progress-animation 60s linear infinite;
+    }
+    
+    @keyframes progress-animation {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+    
+    .bell-icon {
+      animation: ring 0.5s ease-in-out infinite;
+    }
+    
+    @keyframes ring {
+      0% { transform: rotate(-15deg); }
+      50% { transform: rotate(15deg); }
+      100% { transform: rotate(-15deg); }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">Sistema Automático de Sinal Escolar</h1>
+      <div class="flex justify-center items-center gap-4">
+        <div class="w-full max-w-md bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium text-gray-600">Status:</span>
+            <span id="status" class="px-2 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">Conectando...</span>
+          </div>
+          <div class="flex items-center">
+            <div class="flex-1 bg-gray-200 rounded-full h-2.5">
+              <div id="connection-progress" class="progress-bar h-2.5 rounded-full"></div>
+            </div>
+            <span id="refresh-time" class="ml-3 text-sm font-medium text-gray-500">00:00</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Current Signal -->
+    <div id="current-signal" class="hidden mb-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg overflow-hidden">
+      <div class="p-6 flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-3">
+            <div id="bell-current" class="bell-icon text-yellow-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            <h2 class="text-white text-xl font-bold">Sinal Ativo</h2>
+          </div>
+          <div class="mt-2">
+            <p id="current-signal-name" class="text-yellow-200 font-medium"></p>
+            <p id="current-signal-time" class="text-blue-100"></p>
+          </div>
+        </div>
+        <div id="signal-animation" class="signal-animation bg-yellow-400 rounded-full p-4 shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
+        </div>
+      </div>
+      <audio id="audio-player" loop></audio>
+    </div>
+
+    <!-- Schedule Display -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Morning Schedule -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-600 px-4 py-3">
+          <h2 class="text-white font-semibold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+ </svg>
+            Manhã
+          </h2>
+        </div>
+        <div id="morning-schedule" class="p-4"></div>
+      </div>
+
+      <!-- Afternoon Schedule -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-600 px-4 py-3">
+          <h2 class="text-white font-semibold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            Tarde
+          </h2>
+        </div>
+        <div id="afternoon-schedule" class="p-4"></div>
+      </div>
+
+      <!-- Afternoon Friday Schedule -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-600 px-4 py-3">
+          <h2 class="text-white font-semibold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            Tarde de Sexta
+          </h2>
+        </div>
+        <div id="afternoon-friday-schedule" class="p-4"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let schedule = {};
+  let currentPeriod = detectCurrentPeriod();
+  let audioContext;
+  const sinaisTocadosHoje = new Set();
+
+  function detectCurrentPeriod() {
+    const now = new Date();
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+    if (totalMinutes >= 360 && totalMinutes < 968) return "morning";
+    if (totalMinutes >= 971 && totalMinutes < 1140) return "afternoon";
+    return "night";
+  }
+
+  function loadSchedule() {
+    fetch('https://sinal.onrender.com/api/schedule')
+      .then(response => {
+        if (!response.ok) throw new Error('Erro ao carregar horários: ' + response.statusText);
+        return response.json();
+      })
+      .then(data => {
+        schedule = data;
+        renderScheduleTable();
+      })
+      .catch(error => {
+        console.error('Erro ao carregar horários:', error);
+        schedule = {};
+      });
+  }
+
+  function renderScheduleTable() {
+    const morningContainer = document.getElementById('morning-schedule');
+    const afternoonContainer = document.getElementById('afternoon-schedule');
+    const afternoonFridayContainer = document.getElementById('afternoon-friday-schedule');
+
+    morningContainer.innerHTML = schedule.morning?.map(signal =>
+      `<div class="time-card p-2 border rounded mb-2">${signal.time} - ${signal.name}</div>`).join('');
+
+    afternoonContainer.innerHTML = schedule.afternoon?.map(signal =>
+      `<div class="time-card p-2 border rounded mb-2">${signal.time} - ${signal.name}</div>`).join('');
+
+    afternoonFridayContainer.innerHTML = schedule.afternoonFriday?.map(signal =>
+      `<div class="time-card p-2 border rounded mb-2">${signal.time} - ${signal.name}</div>`).join('');
+  }
+
+  function initAudio() {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioElement = document.getElementById('audio-player');
+      audioElement.src = 'sino.mp3';
+      audioElement.crossOrigin = "anonymous";
+
+      const source = audioContext.createMediaElementSource(audioElement);
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 1);
+      gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + 5);
+      gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + 6);
+
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      audioElement.play();
+
+      setTimeout(() => {
+        audioElement.pause();
+        source.disconnect();
+        gainNode.disconnect();
+      }, 7000);
+    } catch (e) {
+      console.error("Erro ao tocar áudio:", e);
+    }
+  }
+
+  function checkSignalTimes(now) {
+    const dayOfWeek = now.getDay();
+    let effectivePeriod = currentPeriod;
+    if (currentPeriod === "afternoon" && dayOfWeek === 5) {
+      effectivePeriod = "afternoonFriday";
+    }
+
+    const currentPeriodSignals = schedule[effectivePeriod] || [];
+    const currentTimeStr = now.toTimeString().substring(0, 5);
+
+    for (const signal of currentPeriodSignals) {
+      if (signal.time === currentTimeStr && now.getSeconds() === 0) {
+        const signalId = `${effectivePeriod}-${signal.time}`;
+        if (!sinaisTocadosHoje.has(signalId)) {
+          sinaisTocadosHoje.add(signalId);
+          updateSignalUI(signal);
+          initAudio();
+          break;
+        }
+      }
+    }
+  }
+
+  function updateSignalUI(signal) {
+    document.getElementById('current-signal').classList.remove('hidden');
+    document.getElementById('current-signal-name').innerText = signal.name;
+    document.getElementById('current-signal-time').innerText = signal.time;
+  }
+
+  function updateClock() {
+    const now = new Date();
+    checkSignalTimes(now);
+  }
+
+  function initApp() {
+    loadSchedule();
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Detecta mudança de período
+    setInterval(() => {
+      const newPeriod = detectCurrentPeriod();
+      if (newPeriod !== currentPeriod) {
+        console.log("Período mudou. Recarregando página...");
+        location.reload();
+      }
+    }, 60000);
+  }
+
+  document.addEventListener('DOMContentLoaded', initApp);
+</script>
+
+</body>
+</html> 

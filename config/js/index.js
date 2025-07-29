@@ -1,5 +1,5 @@
 let schedule = {};
-let currentPeriod = null;
+let currentPeriod = detectCurrentPeriod();
 let audioContext;
 let sinaisTocadosHoje = new Set(); // Para evitar tocar duas vezes o mesmo horário
 
@@ -12,22 +12,32 @@ function loadSchedule() {
     .then(data => {
       schedule = data;
       currentPeriod = detectCurrentPeriod();
-      renderScheduleTable();
+      renderAllScheduleTables();
     })
     .catch(error => {
       console.error('Erro ao carregar horários:', error);
       schedule = {};
-      renderScheduleTable();
+      renderAllScheduleTables();
     });
 }
 
 function detectCurrentPeriod() {
   const now = new Date();
-  const hours = now.getHours();
-  if (hours >= 6 && hours < 13) return "morning";
-  if (hours >= 13 && hours < 19) return "afternoon";
-  return "night";
+  const totalMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (totalMinutes >= 360 && totalMinutes < 780) return "morning";      // 06:00 - 16:04
+  if (totalMinutes >= 780 && totalMinutes < 1140) return "afternoon";   // 16:06 - 18:59
+  return "night";                                                       // 19:00 - 05:59
 }
+
+setInterval(() => {
+  const newPeriod = detectCurrentPeriod();
+  if (newPeriod !== currentPeriod) {
+    console.log("Período mudou de", currentPeriod, "para", newPeriod);
+    currentPeriod = newPeriod;             // Atualiza o período
+    loadSchedule();                        // Recarrega os horários do novo período
+  }
+}, 60000);
 
 function initAudio() {
   try {
@@ -117,26 +127,17 @@ function updateSignalUI(currentSignal, nextSignal) {
   }
 }
 
-function renderScheduleTable() {
-  const tableBody = document.getElementById("scheduleTable");
-  tableBody.innerHTML = "";
-
+// NOVA função para renderizar as 3 tabelas simultaneamente
+function renderAllScheduleTables() {
   const dayOfWeek = new Date().getDay();
   const isFriday = dayOfWeek === 5;
-  const signalsToRender =
-    currentPeriod === "afternoon" && isFriday
-      ? schedule["afternoonFriday"] || []
-      : schedule[currentPeriod] || [];
 
-  signalsToRender.forEach((signal, index) => {
-    const row = document.createElement("tr");
-    row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
-    row.innerHTML = `
-      <td class="py-3 px-4 text-gray-700">${signal.time}</td>
-      <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
-    `;
-    tableBody.appendChild(row);
-  });
+  const periods = ["morning", "afternoon", "night"];
+  const tableIds = {
+    morning: "scheduleTable-morning",
+    afternoon: "scheduleTable-afternoon",
+    night: "scheduleTable-evening",
+  };
 
   const periodNames = {
     morning: "Manhã",
@@ -144,8 +145,26 @@ function renderScheduleTable() {
     night: "Noite",
   };
 
-  document.getElementById("periodIndicator").textContent =
-    `Período: ${periodNames[currentPeriod] || currentPeriod}`;
+  periods.forEach(period => {
+    const tableBody = document.getElementById(tableIds[period]);
+    if (!tableBody) return;
+
+    tableBody.innerHTML = "";
+
+    const effectiveKey =
+      period === "afternoon" && isFriday ? "afternoonFriday" : period;
+    const signals = schedule[effectiveKey] || [];
+
+    signals.forEach((signal, index) => {
+      const row = document.createElement("tr");
+      row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
+      row.innerHTML = `
+        <td class="py-3 px-4 text-gray-700">${signal.time}</td>
+        <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  });
 }
 
 function initApp() {
