@@ -23,9 +23,9 @@
             </h1>
           </div>
           <div class="current-time bg-white px-4 py-2 rounded-full shadow-md">
-            <span class="text-lg font-medium text-gray-700" id="currentTime"
-              >--:--:--</span
-            >
+            <span class="text-lg font-medium text-gray-700" id="currentTime">
+              --:--:--
+            </span>
           </div>
         </div>
       </header>
@@ -38,10 +38,7 @@
             </h2>
           </div>
 
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6"
-            id="quickInfo"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6" id="quickInfo">
             <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
               <h3 class="font-medium text-blue-800">Próximo Sinal</h3>
               <p class="text-2xl font-bold text-blue-600" id="nextSignalTime">
@@ -51,10 +48,7 @@
             </div>
             <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
               <h3 class="font-medium text-green-800">Sinal Atual</h3>
-              <p
-                class="text-2xl font-bold text-green-600"
-                id="currentSignalTime"
-              >
+              <p class="text-2xl font-bold text-green-600" id="currentSignalTime">
                 --:--
               </p>
               <p class="text-gray-600" id="currentSignalName">
@@ -73,6 +67,7 @@
               </div>
             </div>
 
+            <!-- Tabela de horários -->
             <div class="overflow-x-auto">
               <table class="min-w-full bg-white rounded-lg overflow-hidden">
                 <thead class="bg-gray-100">
@@ -83,15 +78,22 @@
                     <th class="py-3 px-4 text-left font-medium text-gray-700">
                       Sinal
                     </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Duração
-                    </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200" id="scheduleTable">
                   <!-- Linhas da tabela preenchidas via JS -->
                 </tbody>
               </table>
+            </div>
+
+            <!-- Botões de reprodução manual -->
+            <div class="mt-8">
+              <h2 class="text-lg font-semibold text-gray-800 mb-2">
+                Reproduzir sinal manualmente
+              </h2>
+              <div id="manualSignalButtons" class="flex flex-wrap gap-2">
+                <!-- Botões criados via JS -->
+              </div>
             </div>
           </div>
         </div>

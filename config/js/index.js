@@ -1,20 +1,18 @@
-let schedule = {}; // Inicializa a variável schedule como um objeto vazio
+let schedule = {};
 let currentPeriod = null;
 let audioContext;
 
-// Recuperar dados da API
 function loadSchedule() {
   fetch('https://sinal.onrender.com/api/schedule')
     .then(response => {
-      if (!response.ok) {
-        throw new Error('Erro ao carregar horários: ' + response.statusText);
-      }
+      if (!response.ok) throw new Error('Erro ao carregar horários: ' + response.statusText);
       return response.json();
     })
     .then(data => {
       schedule = data;
       currentPeriod = detectCurrentPeriod();
       renderScheduleTable();
+      renderSignalButtons(); // 👈 adiciona os botões para reprodução manual
     })
     .catch(error => {
       console.error('Erro ao carregar horários:', error);
@@ -26,14 +24,9 @@ function loadSchedule() {
 function detectCurrentPeriod() {
   const now = new Date();
   const hours = now.getHours();
-
-  if (hours >= 6 && hours < 13) {
-    return "morning";
-  } else if (hours >= 13 && hours < 19) {
-    return "afternoon";
-  } else {
-    return "night";
-  }
+  if (hours >= 6 && hours < 13) return "morning";
+  if (hours >= 13 && hours < 19) return "afternoon";
+  return "night";
 }
 
 function initAudio() {
@@ -65,60 +58,35 @@ function initAudio() {
 
 function updateClock() {
   const now = new Date();
-  const timeStr = now.toLocaleTimeString();
-  document.getElementById("currentTime").textContent = timeStr;
+  document.getElementById("currentTime").textContent = now.toLocaleTimeString();
   checkSignalTimes(now);
 }
 
 function checkSignalTimes(now) {
   const dayOfWeek = now.getDay();
   let effectivePeriod = currentPeriod;
-
   if (currentPeriod === "afternoon" && dayOfWeek === 5) {
     effectivePeriod = "afternoonFriday";
   }
 
   const currentPeriodSignals = schedule[effectivePeriod] || [];
   const currentTime = now.getHours() * 60 + now.getMinutes();
-  let currentSignal = null;
-  let nextSignal = null;
 
-  for (let i = 0; i < currentPeriodSignals.length; i++) {
-    const signal = currentPeriodSignals[i];
+  for (const signal of currentPeriodSignals) {
     const [hours, minutes] = signal.time.split(":").map(Number);
     const signalTime = hours * 60 + minutes;
-    const signalEndTime = signalTime + signal.duration;
 
-    if (currentTime >= signalTime && currentTime < signalEndTime) {
-      currentSignal = signal;
-      if (i < currentPeriodSignals.length - 1) {
-        nextSignal = currentPeriodSignals[i + 1];
-      }
-      break;
-    } else if (currentTime < signalTime) {
-      nextSignal = signal;
-      break;
-    }
-  }
-
-  updateSignalUI(currentSignal, nextSignal);
-
-  if (currentSignal && now.getSeconds() === 0) {
-    const [hours, minutes] = currentSignal.time.split(":");
-    if (now.getHours() == hours && now.getMinutes() == minutes) {
+    if (currentTime === signalTime && now.getSeconds() === 0) {
+      updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
       initAudio();
+      break;
     }
   }
+}
 
-  if (!nextSignal && currentSignal && now.getSeconds() === 0) {
-    const periodOrder = ["morning", "afternoon"];
-    const currentIndex = periodOrder.indexOf(currentPeriod);
-    const nextPeriod = periodOrder[currentIndex + 1];
-
-    if (nextPeriod) {
-      window.location.reload(); // Recarrega a página para iniciar o próximo período
-    }
-  }
+function getNextSignal(signals, current) {
+  const index = signals.indexOf(current);
+  return index >= 0 && index < signals.length - 1 ? signals[index + 1] : null;
 }
 
 function updateSignalUI(currentSignal, nextSignal) {
@@ -154,7 +122,6 @@ function renderScheduleTable() {
 
   const dayOfWeek = new Date().getDay();
   const isFriday = dayOfWeek === 5;
-
   const signalsToRender =
     currentPeriod === "afternoon" && isFriday
       ? schedule["afternoonFriday"] || []
@@ -166,7 +133,7 @@ function renderScheduleTable() {
     row.innerHTML = `
       <td class="py-3 px-4 text-gray-700">${signal.time}</td>
       <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
-      <td class="py-3 px-4 text-gray-700">${signal.duration} min</td>
+      <td class="py-3 px-4 text-gray-500 italic">Manual</td>
     `;
     tableBody.appendChild(row);
   });
@@ -174,17 +141,40 @@ function renderScheduleTable() {
   const periodNames = {
     morning: "Manhã",
     afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
+    night: "Noite",
   };
 
   document.getElementById("periodIndicator").textContent =
-    `Período: ${periodNames[currentPeriod]}`;
+    `Período: ${periodNames[currentPeriod] || currentPeriod}`;
+}
+
+function renderSignalButtons() {
+  const container = document.getElementById("manualSignalButtons");
+  container.innerHTML = "";
+
+  const dayOfWeek = new Date().getDay();
+  const isFriday = dayOfWeek === 5;
+  const signals =
+    currentPeriod === "afternoon" && isFriday
+      ? schedule["afternoonFriday"] || []
+      : schedule[currentPeriod] || [];
+
+  signals.forEach(signal => {
+    const btn = document.createElement("button");
+    btn.textContent = `${signal.time} - ${signal.name}`;
+    btn.className = "bg-blue-600 text-white px-4 py-2 m-1 rounded hover:bg-blue-800";
+    btn.onclick = () => {
+      updateSignalUI(signal, getNextSignal(signals, signal));
+      initAudio();
+    };
+    container.appendChild(btn);
+  });
 }
 
 function initApp() {
   loadSchedule();
   updateClock();
   setInterval(updateClock, 1000);
-  renderScheduleTable();
 }
 
 document.addEventListener("DOMContentLoaded", initApp);
