@@ -38,7 +38,6 @@ function renderScheduleTable() {
       row.innerHTML = `
         <td class="py-3 px-4 text-gray-700">${signal.time}</td>
         <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
-        <td class="py-3 px-4 text-gray-700">${signal.duration} min</td>
       `;
       tableBody.appendChild(row);
     });
@@ -202,7 +201,7 @@ function initApp() {
       const time = row.querySelector(".time-input").value;
       const name = row.querySelector(".name-input").value;
 
-      schedule[currentPeriod][index] = { time, name, duration };
+      schedule[currentPeriod][index] = { time, name };
     }
   });
 }
