@@ -46,7 +46,7 @@ function initAudio() {
     const gainNode = audioContext.createGain();
     gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
     gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 1);
-    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + 8);
+    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + 5);
     gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + 6);
 
     source.connect(gainNode);
