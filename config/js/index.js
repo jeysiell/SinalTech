@@ -1,6 +1,7 @@
 let schedule = {};
 let currentPeriod = null;
 let audioContext;
+let sinaisTocadosHoje = new Set(); // Para evitar tocar duas vezes o mesmo horário
 
 function loadSchedule() {
   fetch('https://sinal.onrender.com/api/schedule')
@@ -12,7 +13,6 @@ function loadSchedule() {
       schedule = data;
       currentPeriod = detectCurrentPeriod();
       renderScheduleTable();
-      renderSignalButtons(); // 👈 adiciona os botões para reprodução manual
     })
     .catch(error => {
       console.error('Erro ao carregar horários:', error);
@@ -70,16 +70,17 @@ function checkSignalTimes(now) {
   }
 
   const currentPeriodSignals = schedule[effectivePeriod] || [];
-  const currentTime = now.getHours() * 60 + now.getMinutes();
+  const currentTimeStr = now.toTimeString().substring(0, 5); // formato "HH:MM"
 
   for (const signal of currentPeriodSignals) {
-    const [hours, minutes] = signal.time.split(":").map(Number);
-    const signalTime = hours * 60 + minutes;
-
-    if (currentTime === signalTime && now.getSeconds() === 0) {
-      updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
-      initAudio();
-      break;
+    if (signal.time === currentTimeStr && now.getSeconds() === 0) {
+      const signalId = `${effectivePeriod}-${signal.time}`;
+      if (!sinaisTocadosHoje.has(signalId)) {
+        sinaisTocadosHoje.add(signalId);
+        updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
+        initAudio();
+        break;
+      }
     }
   }
 }
@@ -133,7 +134,6 @@ function renderScheduleTable() {
     row.innerHTML = `
       <td class="py-3 px-4 text-gray-700">${signal.time}</td>
       <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
-      <td class="py-3 px-4 text-gray-500 italic">Manual</td>
     `;
     tableBody.appendChild(row);
   });
@@ -146,29 +146,6 @@ function renderScheduleTable() {
 
   document.getElementById("periodIndicator").textContent =
     `Período: ${periodNames[currentPeriod] || currentPeriod}`;
-}
-
-function renderSignalButtons() {
-  const container = document.getElementById("manualSignalButtons");
-  container.innerHTML = "";
-
-  const dayOfWeek = new Date().getDay();
-  const isFriday = dayOfWeek === 5;
-  const signals =
-    currentPeriod === "afternoon" && isFriday
-      ? schedule["afternoonFriday"] || []
-      : schedule[currentPeriod] || [];
-
-  signals.forEach(signal => {
-    const btn = document.createElement("button");
-    btn.textContent = `${signal.time} - ${signal.name}`;
-    btn.className = "bg-blue-600 text-white px-4 py-2 m-1 rounded hover:bg-blue-800";
-    btn.onclick = () => {
-      updateSignalUI(signal, getNextSignal(signals, signal));
-      initAudio();
-    };
-    container.appendChild(btn);
-  });
 }
 
 function initApp() {
