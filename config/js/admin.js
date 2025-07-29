@@ -72,10 +72,6 @@ function renderConfigForm() {
         <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Sinal</label>
         <input type="text" value="${signal.name}" class="name-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
       </div>
-      <div class="sm:col-span-3">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Duração (min)</label>
-        <input type="number" min="1" value="${signal.duration}" class="duration-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-      </div>
       <div class="sm:col-span-2 flex space-x-2 justify-end">
         <button class="edit-btn px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition" data-index="${index}">
           <i class="fas fa-save"></i>
@@ -100,7 +96,6 @@ function addNewTime() {
   const newSignal = {
     time: "00:00",
     name: "Novo Sinal",
-    duration: 1,
   };
   schedule[currentPeriod].push(newSignal);
   renderConfigForm();
@@ -185,9 +180,8 @@ function initApp() {
       if (row) {
         const time = row.querySelector(".time-input").value;
         const name = row.querySelector(".name-input").value;
-        const duration = parseInt(row.querySelector(".duration-input").value);
 
-        schedule[currentPeriod][index] = { time, name, duration };
+        schedule[currentPeriod][index] = { time, name};
         saveConfiguration();
       }
     }
@@ -207,7 +201,6 @@ function initApp() {
       const index = Array.from(row.parentNode.children).indexOf(row);
       const time = row.querySelector(".time-input").value;
       const name = row.querySelector(".name-input").value;
-      const duration = parseInt(row.querySelector(".duration-input").value);
 
       schedule[currentPeriod][index] = { time, name, duration };
     }
