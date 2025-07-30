@@ -71,6 +71,22 @@ function renderConfigForm() {
         <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Sinal</label>
         <input type="text" value="${signal.name}" class="name-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
       </div>
+      <div class="sm:col-span-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Música</label>
+        <select class="music-select w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="musica1.mp3" ${signal.music === "musica1.mp3" ? "selected" : ""}>Música 1</option>
+          <option value="musica2.mp3" ${signal.music === "musica2.mp3" ? "selected" : ""}>Música 2</option>
+          <option value="musica3.mp3" ${signal.music === "musica3.mp3" ? "selected" : ""}>Música 3</option>
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Duração</label>
+        <select class="duration-select w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="5" ${signal.duration == 5 ? "selected" : ""}>5 segundos</option>
+          <option value="10" ${signal.duration == 10 ? "selected" : ""}>10 segundos</option>
+        </select>
+      </div>
+
       <div class="sm:col-span-2 flex space-x-2 justify-end">
         <button class="edit-btn px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition" data-index="${index}">
           <i class="fas fa-save"></i>
@@ -95,7 +111,10 @@ function addNewTime() {
   const newSignal = {
     time: "00:00",
     name: "Novo Sinal",
+    music: "musica1.mp3",
+    duration: 5,
   };
+
   schedule[currentPeriod].push(newSignal);
   renderConfigForm();
   document.querySelector("#periodConfig").lastElementChild.scrollIntoView();
@@ -179,8 +198,10 @@ function initApp() {
       if (row) {
         const time = row.querySelector(".time-input").value;
         const name = row.querySelector(".name-input").value;
+        const music = row.querySelector(".music-select").value;
+        const duration = parseInt(row.querySelector(".duration-select").value);
 
-        schedule[currentPeriod][index] = { time, name};
+        schedule[currentPeriod][index] = { time, name, music, duration };
         saveConfiguration();
       }
     }
@@ -200,8 +221,10 @@ function initApp() {
       const index = Array.from(row.parentNode.children).indexOf(row);
       const time = row.querySelector(".time-input").value;
       const name = row.querySelector(".name-input").value;
+      const music = row.querySelector(".music-select").value;
+      const duration = parseInt(row.querySelector(".duration-select").value);
 
-      schedule[currentPeriod][index] = { time, name };
+      schedule[currentPeriod][index] = { time, name, music, duration };
     }
   });
 }
