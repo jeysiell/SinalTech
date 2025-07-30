@@ -48,24 +48,30 @@ function initAudio(music = "sino.mp3", duration = 5) {
     const source = audioContext.createMediaElementSource(audioElement);
     const gainNode = audioContext.createGain();
 
-    gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 1);
-    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + duration);
-    gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + duration + 1);
+    const now = audioContext.currentTime;
+    const fadeIn = 1;
+    const fadeOut = 1;
+
+    gainNode.gain.setValueAtTime(0.0, now);
+    gainNode.gain.linearRampToValueAtTime(1.0, now + fadeIn);                        // fade in
+    gainNode.gain.setValueAtTime(1.0, now + fadeIn + duration);                      // volume constante
+    gainNode.gain.linearRampToValueAtTime(0.0, now + fadeIn + duration + fadeOut);  // fade out
 
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
     audioElement.play();
 
+    const totalPlayTime = (fadeIn + duration + fadeOut) * 1000;
     setTimeout(() => {
       audioElement.pause();
       source.disconnect();
       gainNode.disconnect();
-    }, (duration + 2) * 1000);
+    }, totalPlayTime);
   } catch (e) {
     console.error("Erro ao tocar áudio:", e);
   }
 }
+
 
 
 function updateClock() {
