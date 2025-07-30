@@ -39,18 +39,19 @@ setInterval(() => {
   }
 }, 60000);
 
-function initAudio() {
+function initAudio(music = "sino.mp3", duration = 5) {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const audioElement = new Audio("sino.mp3");
+    const audioElement = new Audio(`./assets/audio/${music}`);
     audioElement.crossOrigin = "anonymous";
 
     const source = audioContext.createMediaElementSource(audioElement);
     const gainNode = audioContext.createGain();
+
     gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
     gainNode.gain.linearRampToValueAtTime(1.0, audioContext.currentTime + 1);
-    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + 5);
-    gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + 6);
+    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime + duration);
+    gainNode.gain.linearRampToValueAtTime(0.0, audioContext.currentTime + duration + 1);
 
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
@@ -60,11 +61,12 @@ function initAudio() {
       audioElement.pause();
       source.disconnect();
       gainNode.disconnect();
-    }, 7000);
+    }, (duration + 2) * 1000);
   } catch (e) {
     console.error("Erro ao tocar áudio:", e);
   }
 }
+
 
 function updateClock() {
   const now = new Date();
@@ -88,7 +90,7 @@ function checkSignalTimes(now) {
       if (!sinaisTocadosHoje.has(signalId)) {
         sinaisTocadosHoje.add(signalId);
         updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
-        initAudio();
+        initAudio(signal.music || "sino.mp3", signal.duration || 5);
         break;
       }
     }
