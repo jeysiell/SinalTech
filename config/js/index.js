@@ -96,7 +96,9 @@ function checkSignalTimes(now) {
       if (!sinaisTocadosHoje.has(signalId)) {
         sinaisTocadosHoje.add(signalId);
         updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
-        initAudio(signal.music || "sino.mp3", signal.duration || 5);
+        let dur = signal.duration || 5; 
+        dur = dur === 5 ? 10 : dur === 10 ? 15 : dur;
+        initAudio(signal.music || "sino.mp3", dur);
         break;
       }
     }
