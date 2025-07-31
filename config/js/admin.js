@@ -74,8 +74,8 @@ function renderConfigForm() {
       <div class="sm:col-span-3">
         <label class="block text-sm font-medium text-gray-700 mb-1">Música</label>
         <select class="music-select w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-          <option value="musica1.mp3" ${signal.music === "musica1.mp3" ? "selected" : ""}>Música 1</option>
-          <option value="musica2.mp3" ${signal.music === "musica2.mp3" ? "selected" : ""}>Música 2</option>
+          <option value="musica1.mp3" ${signal.music === "musica1.mp3" ? "selected" : ""}>Tu me Sondas</option>
+          <option value="musica2.mp3" ${signal.music === "musica2.mp3" ? "selected" : ""}>Eu Amo a Minha Escola</option>
           <option value="musica3.mp3" ${signal.music === "musica3.mp3" ? "selected" : ""}>Música 3</option>
         </select>
       </div>
