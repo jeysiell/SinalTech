@@ -149,10 +149,10 @@ function renderAllScheduleTables() {
     night: "scheduleTable-evening",
   };
 
-  const periodNames = {
-    morning: "Manhã",
-    afternoon: isFriday ? "Tarde (Sexta-feira)" : "Tarde",
-    night: "Noite",
+  const musicLabels = {
+    "musica1.mp3": "Tu me Sondas",
+    "musica2.mp3": "Eu Amo a Minha Escola",
+    "musica3.mp3": "My Lighthouse"
   };
 
   periods.forEach(period => {
@@ -168,9 +168,15 @@ function renderAllScheduleTables() {
     signals.forEach((signal, index) => {
       const row = document.createElement("tr");
       row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
+
+      const musicName = musicLabels[signal.music] || signal.music || "Sino padrão";
+      const durationText = signal.duration ? `${signal.duration}s` : "";
+
       row.innerHTML = `
         <td class="py-3 px-4 text-gray-700">${signal.time}</td>
         <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
+        <td class="py-3 px-4 text-gray-700 font-medium">${musicName}</td>
+        <td class="py-3 px-4 text-gray-700 font-medium">${durationText}</td>
       `;
       tableBody.appendChild(row);
     });

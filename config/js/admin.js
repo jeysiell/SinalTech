@@ -29,20 +29,36 @@ function renderScheduleTable() {
   tableBody.innerHTML = "";
 
   const periods = ["morning", "afternoon", "afternoonFriday"];
+
+  // Mapeia o nome do arquivo de música para um nome amigável
+  const musicLabels = {
+    "musica1.mp3": "Tu me Sondas",
+    "musica2.mp3": "Eu Amo a Minha Escola",
+    "musica3.mp3": "My Lighthouse"
+  };
+
   periods.forEach((period) => {
-    const signalsToRender = schedule[period] || []; // Usa um array vazio se não houver sinais
+    const signalsToRender = schedule[period] || [];
 
     signalsToRender.forEach((signal, index) => {
       const row = document.createElement("tr");
       row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
+
+      // Converte o nome da música e adiciona o 'S' de segundos
+      const musicName = musicLabels[signal.music] || signal.music;
+      const durationText = `${signal.duration}s`;
+
       row.innerHTML = `
         <td class="py-3 px-4 text-gray-700">${signal.time}</td>
         <td class="py-3 px-4 text-gray-700 font-medium">${signal.name}</td>
+        <td class="py-3 px-4 text-gray-700 font-medium">${musicName}</td>
+        <td class="py-3 px-4 text-gray-700 font-medium">${durationText}</td>
       `;
       tableBody.appendChild(row);
     });
   });
 }
+
 
 // Renderizar formulário de configuração
 function renderConfigForm() {
