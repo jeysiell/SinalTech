@@ -25,8 +25,8 @@ function detectCurrentPeriod() {
   const now = new Date();
   const totalMinutes = now.getHours() * 60 + now.getMinutes();
 
-  if (totalMinutes >= 360 && totalMinutes < 780) return "morning";      // 06:00 - 16:04
-  if (totalMinutes >= 780 && totalMinutes < 1140) return "afternoon";   // 16:06 - 18:59
+  if (totalMinutes >= 360 && totalMinutes < 775) return "morning";      // 06:00 - 16:04
+  if (totalMinutes >= 777 && totalMinutes < 1140) return "afternoon";   // 16:06 - 18:59
   return "night";                                                       // 19:00 - 05:59
 }
 
