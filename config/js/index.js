@@ -49,12 +49,12 @@ function initAudio(music = "sino.mp3", duration = 5) {
     const gainNode = audioContext.createGain();
 
     const now = audioContext.currentTime;
-    const fadeIn = 1;
-    const fadeOut = 1;
+    const fadeIn = 0.3;
+    const fadeOut = 0.3;
 
     gainNode.gain.setValueAtTime(0.0, now);
-    gainNode.gain.linearRampToValueAtTime(1.0, now + fadeIn);                        // fade in
-    gainNode.gain.setValueAtTime(1.0, now + fadeIn + duration);                      // volume constante
+    gainNode.gain.linearRampToValueAtTime(0.3, now + fadeIn);                        // fade in
+    gainNode.gain.setValueAtTime(0.3, now + fadeIn + duration);                      // volume constante
     gainNode.gain.linearRampToValueAtTime(0.0, now + fadeIn + duration + fadeOut);  // fade out
 
     source.connect(gainNode);
