@@ -97,7 +97,7 @@ function checkSignalTimes(now) {
         sinaisTocadosHoje.add(signalId);
         updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
         let dur = signal.duration || 5; 
-        dur = dur === 5 ? 15 : dur === 10 ? 20 : dur;
+        dur = dur === 5 ? 11 : dur === 10 ? 20 : dur;
         initAudio(signal.music || "sino.mp3", dur);
         break;
       }
