@@ -191,12 +191,25 @@ function initApp() {
 
 document.addEventListener("DOMContentLoaded", initApp);
 async function wakeUpAPI() {
+  const statusEl = document.getElementById("statusWake");
+  const btnOk = document.getElementById("btnWakeOk");
+
   try {
     console.log("⏳ Acordando API de sinais...");
+    statusEl.textContent = "Acordando API de sinais...";
     await fetch("https://sinal.onrender.com/api/schedule", { method: "GET" });
+
     console.log("✅ API acordada com sucesso!");
+    statusEl.textContent = "API acordada! Clique em OK para continuar.";
+
+    // Habilita botão
+    btnOk.disabled = false;
+    btnOk.classList.remove("bg-gray-500", "opacity-50", "cursor-not-allowed");
+    btnOk.classList.add("bg-green-500", "hover:bg-green-600");
   } catch (error) {
     console.error("⚠️ Erro ao acordar API:", error);
+    statusEl.textContent = "Falha ao acordar API. Tentando novamente...";
+    setTimeout(wakeUpAPI, 3000); // tenta de novo a cada 3s
   }
 }
 
@@ -207,17 +220,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Chama a API assim que a página carrega
   wakeUpAPI();
 
-  // Só libera quando o usuário clicar em OK
   btnOk.addEventListener("click", () => {
     overlay.style.display = "none";
 
-    // Alguns navegadores bloqueiam áudio sem interação
     if (audioContext && audioContext.state === "suspended") {
       audioContext.resume();
     }
 
-    // Inicia a aplicação
     initApp();
   });
 });
-
