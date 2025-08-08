@@ -190,3 +190,34 @@ function initApp() {
 }
 
 document.addEventListener("DOMContentLoaded", initApp);
+async function wakeUpAPI() {
+  try {
+    console.log("⏳ Acordando API de sinais...");
+    await fetch("https://sinal.onrender.com/api/schedule", { method: "GET" });
+    console.log("✅ API acordada com sucesso!");
+  } catch (error) {
+    console.error("⚠️ Erro ao acordar API:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const overlay = document.getElementById("overlayWakeup");
+  const btnOk = document.getElementById("btnWakeOk");
+
+  // Chama a API assim que a página carrega
+  wakeUpAPI();
+
+  // Só libera quando o usuário clicar em OK
+  btnOk.addEventListener("click", () => {
+    overlay.style.display = "none";
+
+    // Alguns navegadores bloqueiam áudio sem interação
+    if (audioContext && audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+
+    // Inicia a aplicação
+    initApp();
+  });
+});
+
