@@ -1,45 +1,46 @@
+// ==============================
+// 🔔 Sistema de toque automático
+// ==============================
+
 let schedule = {};
 let currentPeriod = detectCurrentPeriod();
 let audioContext;
-let sinaisTocadosHoje = new Set(); // Para evitar tocar duas vezes o mesmo horário
+let nextTimeout = null;
+let sinaisTocadosHoje = new Set(); // evita repetir o mesmo sinal no mesmo dia
 
-function loadSchedule() {
-  fetch('https://sinal.onrender.com/api/schedule')
-    .then(response => {
-      if (!response.ok) throw new Error('Erro ao carregar horários: ' + response.statusText);
-      return response.json();
-    })
-    .then(data => {
-      schedule = data;
-      currentPeriod = detectCurrentPeriod();
-      renderAllScheduleTables();
-    })
-    .catch(error => {
-      console.error('Erro ao carregar horários:', error);
-      schedule = {};
-      renderAllScheduleTables();
-    });
+// ==============================
+// 🔹 Carregar horários da API
+// ==============================
+async function loadSchedule() {
+  try {
+    const response = await fetch("https://sinal.onrender.com/api/schedule");
+    if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+    schedule = await response.json();
+    console.log("✅ Horários carregados:", schedule);
+    currentPeriod = detectCurrentPeriod();
+    renderAllScheduleTables();
+    startScheduler();
+  } catch (error) {
+    console.error("❌ Erro ao carregar horários:", error);
+    schedule = {};
+  }
 }
 
+// ==============================
+// 🕒 Detectar período atual
+// ==============================
 function detectCurrentPeriod() {
   const now = new Date();
   const totalMinutes = now.getHours() * 60 + now.getMinutes();
-
-  if (totalMinutes >= 360 && totalMinutes < 775) return "morning";      // 06:00 - 16:04
-  if (totalMinutes >= 777 && totalMinutes < 1140) return "afternoon";   // 16:06 - 18:59
+  if (totalMinutes >= 360 && totalMinutes < 775) return "morning";      // 06:00 - 12:55
+  if (totalMinutes >= 777 && totalMinutes < 1140) return "afternoon";   // 13:00 - 18:59
   return "night";                                                       // 19:00 - 05:59
 }
 
-setInterval(() => {
-  const newPeriod = detectCurrentPeriod();
-  if (newPeriod !== currentPeriod) {
-    console.log("Período mudou de", currentPeriod, "para", newPeriod);
-    currentPeriod = newPeriod;             // Atualiza o período
-    loadSchedule();                        // Recarrega os horários do novo período
-  }
-}, 60000);
-
-function initAudio(music = "sino.mp3", duration = 5) {
+// ==============================
+// 🎶 Tocar sinal com fade
+// ==============================
+function initAudio(music = "sino.mp3") {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const audioElement = new Audio(`./assets/audio/${music}`);
@@ -49,67 +50,112 @@ function initAudio(music = "sino.mp3", duration = 5) {
     const gainNode = audioContext.createGain();
 
     const now = audioContext.currentTime;
-    const fadeIn = 0.3;
-    const fadeOut = 0.3;
+    const fadeIn = 1;   // 1 segundo
+    const fadeOut = 1;  // 1 segundo
+    const totalDuration = 12;          // 8 segundos total
+    const steadyDuration = totalDuration - fadeIn - fadeOut; // 6s de volume constante
 
+    // Configura ganho (volume) com fade
     gainNode.gain.setValueAtTime(0.0, now);
-    gainNode.gain.linearRampToValueAtTime(0.3, now + fadeIn);                        // fade in
-    gainNode.gain.setValueAtTime(0.3, now + fadeIn + duration);                      // volume constante
-    gainNode.gain.linearRampToValueAtTime(0.0, now + fadeIn + duration + fadeOut);  // fade out
+    gainNode.gain.linearRampToValueAtTime(0.3, now + fadeIn);                       // fade in
+    gainNode.gain.setValueAtTime(0.3, now + fadeIn + steadyDuration);               // volume constante
+    gainNode.gain.linearRampToValueAtTime(0.0, now + fadeIn + steadyDuration + fadeOut); // fade out
 
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
     audioElement.play();
 
-    const totalPlayTime = (fadeIn + duration + fadeOut) * 1000;
+    // Limpeza após término
     setTimeout(() => {
       audioElement.pause();
       source.disconnect();
       gainNode.disconnect();
-    }, totalPlayTime);
+    }, totalDuration * 1000);
   } catch (e) {
     console.error("Erro ao tocar áudio:", e);
   }
 }
 
 
+// ==============================
+// 🧭 Agendador inteligente
+// ==============================
+function startScheduler() {
+  if (nextTimeout) clearTimeout(nextTimeout);
 
-function updateClock() {
   const now = new Date();
-  document.getElementById("currentTime").textContent = now.toLocaleTimeString();
-  checkSignalTimes(now);
-}
-
-function checkSignalTimes(now) {
   const dayOfWeek = now.getDay();
   let effectivePeriod = currentPeriod;
-  if (currentPeriod === "afternoon" && dayOfWeek === 5) {
+  if (effectivePeriod === "afternoon" && dayOfWeek === 5) {
     effectivePeriod = "afternoonFriday";
   }
 
-  const currentPeriodSignals = schedule[effectivePeriod] || [];
-  const currentTimeStr = now.toTimeString().substring(0, 5); // formato "HH:MM"
-
-  for (const signal of currentPeriodSignals) {
-    if (signal.time === currentTimeStr && now.getSeconds() === 0) {
-      const signalId = `${effectivePeriod}-${signal.time}`;
-      if (!sinaisTocadosHoje.has(signalId)) {
-        sinaisTocadosHoje.add(signalId);
-        updateSignalUI(signal, getNextSignal(currentPeriodSignals, signal));
-        let dur = signal.duration || 5; 
-        dur = dur === 5 ? 10 : dur === 8 ? 15 : dur;
-        initAudio(signal.music || "sino.mp3", dur);
-        break;
-      }
-    }
+  const signals = schedule[effectivePeriod] || [];
+  if (!signals.length) {
+    console.warn("Nenhum horário configurado para este período.");
+    return;
   }
+
+  // Encontra o próximo sinal
+  const nextSignal = signals.find(s => {
+    const [h, m] = s.time.split(":").map(Number);
+    const signalTime = new Date();
+    signalTime.setHours(h, m, 0, 0);
+    return signalTime > now;
+  });
+
+  if (!nextSignal) {
+    console.log("✅ Todos os sinais do período já ocorreram.");
+    updateSignalUI(null, null);
+    return;
+  }
+
+  const [h, m] = nextSignal.time.split(":").map(Number);
+  const nextTime = new Date();
+  nextTime.setHours(h, m, 0, 0);
+  const delay = nextTime - now;
+
+  console.log(`⏱️ Próximo sinal às ${nextSignal.time} (${(delay / 60000).toFixed(1)} min)`);
+
+  updateSignalUI(null, nextSignal);
+
+  nextTimeout = setTimeout(() => {
+    tocarSinal(nextSignal, signals);
+  }, delay);
 }
 
+// ==============================
+// 🔔 Tocar e reagendar
+// ==============================
+function tocarSinal(signal, signals) {
+  const signalId = `${signal.time}-${currentPeriod}`;
+  if (sinaisTocadosHoje.has(signalId)) {
+    console.log(`⚠️ Sinal ${signal.time} já tocado hoje.`);
+    return;
+  }
+
+  sinaisTocadosHoje.add(signalId);
+  console.log(`🔔 Tocando sinal: ${signal.name} (${signal.time})`);
+
+  const dur = signal.duration || 5;
+  initAudio(signal.music || "sino.mp3", dur);
+  updateSignalUI(signal, getNextSignal(signals, signal));
+
+  // Agenda o próximo automaticamente
+  startScheduler();
+}
+
+// ==============================
+// ➕ Utilidades
+// ==============================
 function getNextSignal(signals, current) {
   const index = signals.indexOf(current);
   return index >= 0 && index < signals.length - 1 ? signals[index + 1] : null;
 }
 
+// ==============================
+// 🧱 Atualização visual (UI)
+// ==============================
 function updateSignalUI(currentSignal, nextSignal) {
   const currentSignalTimeEl = document.getElementById("currentSignalTime");
   const currentSignalNameEl = document.getElementById("currentSignalName");
@@ -119,13 +165,9 @@ function updateSignalUI(currentSignal, nextSignal) {
   if (currentSignal) {
     currentSignalTimeEl.textContent = currentSignal.time;
     currentSignalNameEl.textContent = currentSignal.name;
-    currentSignalTimeEl.classList.remove("text-green-600");
-    currentSignalTimeEl.classList.add("text-red-600");
   } else {
     currentSignalTimeEl.textContent = "--:--";
     currentSignalNameEl.textContent = "Nenhum sinal ativo";
-    currentSignalTimeEl.classList.remove("text-red-600");
-    currentSignalTimeEl.classList.add("text-green-600");
   }
 
   if (nextSignal) {
@@ -137,38 +179,40 @@ function updateSignalUI(currentSignal, nextSignal) {
   }
 }
 
-// NOVA função para renderizar as 3 tabelas simultaneamente
+// ==============================
+// 📊 Renderizar tabelas
+// ==============================
 function renderAllScheduleTables() {
   const dayOfWeek = new Date().getDay();
   const isFriday = dayOfWeek === 5;
 
-  const periods = ["morning", "afternoon", "night"];
+  // Ajusta para sexta-feira
+  const periods = ["morning", "afternoon", "afternoonFriday"];
   const tableIds = {
     morning: "scheduleTable-morning",
     afternoon: "scheduleTable-afternoon",
-    night: "scheduleTable-evening",
+    afternoonFriday: "scheduleTable-afternoonFriday",
   };
 
   const musicLabels = {
     "musica1.mp3": "Tu me Sondas",
     "musica2.mp3": "Eu Amo a Minha Escola",
-    "musica3.mp3": "My Lighthouse"
+    "musica3.mp3": "My Lighthouse",
+    "musica4.mp3": "Amor Teimoso "
   };
 
   periods.forEach(period => {
     const tableBody = document.getElementById(tableIds[period]);
     if (!tableBody) return;
 
+    // Limpa e obtém os sinais correspondentes
     tableBody.innerHTML = "";
+    const signals = schedule[period] || [];
 
-    const effectiveKey =
-      period === "afternoon" && isFriday ? "afternoonFriday" : period;
-    const signals = schedule[effectiveKey] || [];
-
+    // Renderiza as linhas
     signals.forEach((signal, index) => {
       const row = document.createElement("tr");
       row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
-
       const musicName = musicLabels[signal.music] || signal.music || "Sino padrão";
       const durationText = signal.duration ? `${signal.duration}s` : "";
 
@@ -183,50 +227,75 @@ function renderAllScheduleTables() {
   });
 }
 
-function initApp() {
+// ==============================
+// 🚀 Inicialização
+// ==============================
+document.addEventListener("DOMContentLoaded", async () => {
+  await wakeUpAPI();
   loadSchedule();
-  updateClock();
-  setInterval(updateClock, 1000);
-}
 
-document.addEventListener("DOMContentLoaded", initApp);
+  setInterval(() => {
+    const newPeriod = detectCurrentPeriod();
+    if (newPeriod !== currentPeriod) {
+      console.log(`🌅 Mudou de ${currentPeriod} → ${newPeriod}`);
+      currentPeriod = newPeriod;
+      loadSchedule(); // recarrega ao mudar de período
+    }
+  }, 60000);
+});
+
+// ==============================
+// 🌐 Wake-up da API
+// ==============================
 async function wakeUpAPI() {
-  const statusEl = document.getElementById("statusWake");
-  const btnOk = document.getElementById("btnWakeOk");
-
   try {
-    console.log("⏳ Acordando API de sinais...");
-    statusEl.textContent = "Acordando API de sinais...";
-    await fetch("https://sinal.onrender.com/api/schedule", { method: "GET" });
-
-    console.log("✅ API acordada com sucesso!");
-    statusEl.textContent = "API acordada! Clique em OK para continuar.";
-
-    // Habilita botão
-    btnOk.disabled = false;
-    btnOk.classList.remove("bg-gray-500", "opacity-50", "cursor-not-allowed");
-    btnOk.classList.add("bg-green-500", "hover:bg-green-600");
-  } catch (error) {
-    console.error("⚠️ Erro ao acordar API:", error);
-    statusEl.textContent = "Falha ao acordar API. Tentando novamente...";
-    setTimeout(wakeUpAPI, 3000); // tenta de novo a cada 3s
+    console.log("⏳ Acordando API...");
+    await fetch("https://sinal.onrender.com/api/schedule");
+    console.log("✅ API pronta!");
+  } catch (err) {
+    console.error("⚠️ Falha ao acordar API, tentando novamente...");
+    setTimeout(wakeUpAPI, 3000);
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const overlay = document.getElementById("overlayWakeup");
-  const btnOk = document.getElementById("btnWakeOk");
+// ==============================
+// 🌐 Overlay da API
+// ==============================
 
-  // Chama a API assim que a página carrega
-  wakeUpAPI();
+// Simula carregamento da API
+setTimeout(() => {
+  const status = document.getElementById("statusWake");
+  const btn = document.getElementById("btnWakeOk");
 
-  btnOk.addEventListener("click", () => {
-    overlay.style.display = "none";
+  status.textContent = "API de sinais iniciada com sucesso!";
+  btn.disabled = false;
+  btn.classList.remove("bg-gray-600", "opacity-60", "cursor-not-allowed");
+  btn.classList.add("bg-green-500", "hover:bg-green-600", "cursor-pointer");
+}, 3000);
 
-    if (audioContext && audioContext.state === "suspended") {
-      audioContext.resume();
-    }
-
-    initApp();
-  });
+// Fecha overlay ao clicar em OK
+document.getElementById("btnWakeOk").addEventListener("click", () => {
+  document.getElementById("overlayWakeup").classList.add("opacity-0", "pointer-events-none");
+  setTimeout(() => {
+    document.getElementById("overlayWakeup").style.display = "none";
+  }, 600);
 });
+
+
+// ==============================
+// Atualiza o relogio
+// ==============================
+function updateClock() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+
+  const currentTimeEl = document.getElementById("currentTime");
+  currentTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+// Inicializa o relógio e atualiza a cada segundo
+updateClock();
+setInterval(updateClock, 1000);
+
