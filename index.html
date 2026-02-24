@@ -5,177 +5,214 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SinalTech</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-  <link rel="stylesheet" href="./assets/css/index.css" /> 
+
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
   <link rel="icon" href="./assets/img/logo.ico" type="image/x-icon" />
+
+  <style>
+    /* 🔥 Animação quando o sinal toca */
+    @keyframes signalFlash {
+      0% { background-color: #0f172a; }
+      50% { background-color: #1d4ed8; }
+      100% { background-color: #0f172a; }
+    }
+
+    .signal-active {
+      animation: signalFlash 1s ease-in-out 3;
+    }
+
+    @keyframes pulseScale {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .pulse-signal {
+      animation: pulseScale 0.6s ease-in-out 3;
+    }
+  </style>
+
 </head>
 
-<body class="min-h-screen bg-gray-50">
-  <!-- Overlay de carregamento -->
-  <div id="overlayWakeup"
-    class="fixed inset-0 bg-gray-900 bg-opacity-95 flex flex-col items-center justify-center z-50 text-white transition-all duration-700">
-    <div class="text-center space-y-8">
-      <h1 class="text-4xl font-extrabold tracking-wide text-blue-400 animate-pulse">
-        Iniciando o SinalTech...
-      </h1>
+<body class="min-h-screen bg-gradient-to-br from-slate-100 to-slate-300 transition-all duration-500">
 
-      <!-- Indicador de carregamento -->
-      <div class="flex items-center justify-center space-x-3">
-        <div class="w-4 h-4 bg-blue-400 rounded-full animate-bounce"></div>
-        <div class="w-4 h-4 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-        <div class="w-4 h-4 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+  <!-- OVERLAY INICIAL -->
+  <div id="overlayWakeup"
+    class="fixed inset-0 bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col items-center justify-center z-50 text-white transition-all duration-700">
+
+    <div class="text-center space-y-8 max-w-md">
+
+      <div class="w-20 h-20 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center shadow-2xl">
+        <i class="fas fa-bell text-3xl"></i>
       </div>
 
-      <p class="text-lg text-gray-300 font-medium" id="statusWake">
-        Aguardando inicialização da API de sinais...
+      <h1 class="text-3xl font-bold">
+        Iniciando SinalTech
+      </h1>
+
+      <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+        <div class="bg-blue-500 h-2 animate-pulse w-2/3"></div>
+      </div>
+
+      <p class="text-slate-300 font-medium" id="statusWake">
+        Conectando à API...
       </p>
 
       <button id="btnWakeOk" disabled
-        class="px-8 py-3 bg-gray-600 rounded-xl text-lg font-semibold shadow-lg transform transition-all duration-300 opacity-60 cursor-not-allowed">
+        class="px-8 py-3 bg-slate-700 rounded-xl font-semibold opacity-50 cursor-not-allowed">
         OK
       </button>
+
     </div>
   </div>
 
-  <div class="bg-wave pb-32">
-    <header class="container mx-auto px-4 py-6">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-          <i class="fas fa-bell text-3xl text-blue-600"></i>
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+  <!-- HEADER -->
+  <header class="max-w-6xl mx-auto px-6 py-8">
+    <div class="flex justify-between items-center bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl px-6 py-4 border border-white/40">
+
+      <div class="flex items-center gap-4">
+        <div id="bellIcon"
+          class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300">
+          <i class="fas fa-bell text-white text-2xl"></i>
+        </div>
+
+        <div>
+          <h1 class="text-3xl font-bold text-slate-800">
             Sinal CAB
           </h1>
-        </div>
-        <div class="current-time bg-white px-4 py-2 rounded-full shadow-md">
-          <span class="text-lg font-medium text-gray-700" id="currentTime">
-            --:--:--
-          </span>
+          <p class="text-sm text-slate-500">Painel de Monitoramento</p>
         </div>
       </div>
-    </header>
 
-    <main class="container mx-auto px-4">
-      <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto mb-8">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-bold text-gray-800">
-           ---
-          </h2>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6" id="quickInfo">
-          <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-            <h3 class="font-medium text-blue-800">Próximo Sinal</h3>
-            <p class="text-2xl font-bold text-blue-600" id="nextSignalTime">
-              --:--
-            </p>
-            <p class="text-gray-600" id="nextSignalName">Carregando...</p>
-          </div>
-          <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-            <h3 class="font-medium text-green-800">Ultimo Sinal</h3>
-            <p class="text-2xl font-bold text-green-600" id="currentSignalTime">
-              --:--
-            </p>
-            <p class="text-gray-600" id="currentSignalName">
-              Aguardando...
-            </p>
-          </div>
-        </div>
-
-        <div class="py-4">
-          <div class="space-y-8">
-            <!-- Período Manhã -->
-            <div>
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Manhã</h3>
-              <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Horário
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Sinal
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Música
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Duração
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200" id="scheduleTable-morning">
-                  <!-- Preenchido via JS -->
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Período Tarde -->
-            <div>
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">Tarde</h3>
-              <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Horário
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Sinal
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Música
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Duração
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200" id="scheduleTable-afternoon">
-                  <!-- Preenchido via JS -->
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Período Tarde - Sexta-feira -->
-            <div>
-              <h3 class="text-lg font-semibold text-gray-700 mb-2">
-                Tarde (Sexta-feira)
-              </h3>
-              <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Horário
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Sinal
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Música
-                    </th>
-                    <th class="py-3 px-4 text-left font-medium text-gray-700">
-                      Duração
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200" id="scheduleTable-afternoonFriday">
-                  <!-- Preenchido via JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      <div id="clockBox"
+        class="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg">
+        <span class="text-3xl font-semibold tracking-wider" id="currentTime">
+          --:--:--
+        </span>
       </div>
-    </main>
-  </div>
 
-  <footer class="bg-gray-100 py-6">
-    <div class="container mx-auto px-4 text-center text-gray-600">
-      <p>Desenvolvido por Jeysiell Felipe</p>
     </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="max-w-6xl mx-auto px-6 pb-16">
+
+    <!-- CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+
+      <div class="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+        <h3 class="text-slate-500 uppercase text-sm font-semibold mb-4">
+          Próximo Sinal
+        </h3>
+        <p class="text-4xl font-bold text-slate-800" id="nextSignalTime">
+          --:--
+        </p>
+        <p class="text-slate-500 mt-2" id="nextSignalName">
+          Carregando...
+        </p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+        <h3 class="text-slate-500 uppercase text-sm font-semibold mb-4">
+          Último Sinal
+        </h3>
+        <p class="text-4xl font-bold text-slate-800" id="currentSignalTime">
+          --:--
+        </p>
+        <p class="text-slate-500 mt-2" id="currentSignalName">
+          Aguardando...
+        </p>
+      </div>
+
+    </div>
+
+    <!-- TABELAS -->
+    <div class="space-y-10">
+
+      <!-- Manhã -->
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b">
+          <h3 class="text-lg font-semibold text-slate-700">Manhã</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
+              <tr>
+                <th class="px-6 py-4 text-left">Horário</th>
+                <th class="px-6 py-4 text-left">Sinal</th>
+                <th class="px-6 py-4 text-left">Música</th>
+                <th class="px-6 py-4 text-left">Duração</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200"
+              id="scheduleTable-morning"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tarde -->
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b">
+          <h3 class="text-lg font-semibold text-slate-700">Tarde</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <tbody class="divide-y divide-slate-200"
+              id="scheduleTable-afternoon"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sexta -->
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b">
+          <h3 class="text-lg font-semibold text-slate-700">
+            Tarde (Sexta-feira)
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <tbody class="divide-y divide-slate-200"
+              id="scheduleTable-afternoonFriday"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-slate-100 py-6 text-center text-slate-500">
+    Desenvolvido por Jeysiell Felipe
   </footer>
 
+  <!-- 🔥 SCRIPT ANIMAÇÃO DE TOQUE -->
+  <script>
+    function triggerSignalAnimation() {
+      const body = document.body;
+      const bell = document.getElementById("bellIcon");
+      const clock = document.getElementById("clockBox");
+
+      body.classList.add("signal-active");
+      bell.classList.add("pulse-signal");
+      clock.classList.add("pulse-signal");
+
+      setTimeout(() => {
+        body.classList.remove("signal-active");
+        bell.classList.remove("pulse-signal");
+        clock.classList.remove("pulse-signal");
+      }, 3000);
+    }
+
+    // 👉 CHAME ESSA FUNÇÃO quando o sinal tocar
+    // triggerSignalAnimation();
+  </script>
+
   <script src="./config/js/index.js"></script>
+
 </body>
 
 </html>
