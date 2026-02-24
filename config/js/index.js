@@ -4,7 +4,6 @@
 
 let schedule = {};
 let currentPeriod = detectCurrentPeriod();
-let audioContext;
 let nextTimeout = null;
 let sinaisTocadosHoje = new Set(); // evita repetir o mesmo sinal no mesmo dia
 
@@ -40,37 +39,74 @@ function detectCurrentPeriod() {
 // ==============================
 // 🎶 Tocar sinal com fade
 // ==============================
-function initAudio(music = "sino.mp3") {
+let audioContext = null;
+let currentSource = null;
+
+async function initAudio(music = "sino.mp3", duration = null, volume = 0.5) {
   try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // 🔊 Cria AudioContext apenas uma vez
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // Se estiver suspenso (Chrome autoplay policy)
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    // 🛑 Para som anterior se ainda estiver tocando
+    if (currentSource) {
+      try {
+        currentSource.stop();
+      } catch {}
+      currentSource.disconnect();
+      currentSource = null;
+    }
+
     const audioElement = new Audio(`./assets/audio/${music}`);
     audioElement.crossOrigin = "anonymous";
+    audioElement.preload = "auto";
+
+    await audioElement.play().catch(() => {}); // desbloqueia em alguns navegadores
+    audioElement.pause();
+    audioElement.currentTime = 0;
 
     const source = audioContext.createMediaElementSource(audioElement);
     const gainNode = audioContext.createGain();
 
-    const now = audioContext.currentTime;
-    const fadeIn = 1;   // 1 segundo
-    const fadeOut = 1;  // 1 segundo
-    const totalDuration = 12;          // 8 segundos total
-    const steadyDuration = totalDuration - fadeIn - fadeOut; // 6s de volume constante
-
-    // Configura ganho (volume) com fade
-    gainNode.gain.setValueAtTime(0.0, now);
-    gainNode.gain.linearRampToValueAtTime(0.3, now + fadeIn);                       // fade in
-    gainNode.gain.setValueAtTime(0.3, now + fadeIn + steadyDuration);               // volume constante
-    gainNode.gain.linearRampToValueAtTime(0.0, now + fadeIn + steadyDuration + fadeOut); // fade out
-
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    audioElement.play();
 
-    // Limpeza após término
+    currentSource = source;
+
+    const now = audioContext.currentTime;
+
+    const fadeIn = 1;
+    const fadeOut = 1;
+
+    // ⏱ Usa duração real do áudio se não for passada
+    const audioDuration = duration || audioElement.duration || 10;
+
+    const totalDuration = Math.max(audioDuration, fadeIn + fadeOut + 0.5);
+    const steadyDuration = totalDuration - fadeIn - fadeOut;
+
+    // 🎚 Configuração do fade
+    gainNode.gain.setValueAtTime(0.0, now);
+    gainNode.gain.linearRampToValueAtTime(volume, now + fadeIn);
+    gainNode.gain.setValueAtTime(volume, now + fadeIn + steadyDuration);
+    gainNode.gain.linearRampToValueAtTime(0.0, now + totalDuration);
+
+    // ▶️ Toca
+    await audioElement.play();
+
+    // 🧹 Limpeza automática
     setTimeout(() => {
       audioElement.pause();
       source.disconnect();
       gainNode.disconnect();
+      currentSource = null;
     }, totalDuration * 1000);
+
   } catch (e) {
     console.error("Erro ao tocar áudio:", e);
   }
@@ -122,7 +158,8 @@ function startScheduler() {
 
   console.log(`⏱️ Próximo sinal às ${nextSignal.time} (${Math.round(delay/1000)}s)`);
 
-  updateSignalUI(null, nextSignal);
+  const lastSignal = getLastSignalToday();
+  updateSignalUI(lastSignal, nextSignal);
 
   nextTimeout = setTimeout(() => {
     tocarSinal(nextSignal.original);
@@ -182,10 +219,22 @@ function tocarSinal(signal) {
 
   initAudio(signal.music || "sino.mp3");
 
-  updateSignalUI(signal, null);
+  const nextSignal = getNextFutureSignal();
+  updateSignalUI(signal, nextSignal);
 
   // 🔁 Reagenda automaticamente
   setTimeout(startScheduler, 1000);
+}
+
+function getNextFutureSignal() {
+  const now = new Date();
+  const allSignals = getAllSignalsForToday();
+
+  const future = allSignals
+    .filter(s => s.date > now)
+    .sort((a, b) => a.date - b.date);
+
+  return future.length ? future[0] : null;
 }
 
 // ==============================
@@ -210,7 +259,7 @@ function updateSignalUI(currentSignal, nextSignal) {
     currentSignalNameEl.textContent = currentSignal.name;
   } else {
     currentSignalTimeEl.textContent = "--:--";
-    currentSignalNameEl.textContent = "Nenhum sinal ativo";
+    currentSignalNameEl.textContent = "Aguardando...";
   }
 
   if (nextSignal) {
@@ -220,6 +269,19 @@ function updateSignalUI(currentSignal, nextSignal) {
     nextSignalTimeEl.textContent = "--:--";
     nextSignalNameEl.textContent = "Fim do período";
   }
+}
+
+function getLastSignalToday() {
+  const now = new Date();
+  const allSignals = getAllSignalsForToday();
+
+  if (!allSignals.length) return null;
+
+  const pastSignals = allSignals
+    .filter(s => s.date <= now)
+    .sort((a, b) => b.date - a.date);
+
+  return pastSignals.length ? pastSignals[0] : null;
 }
 
 // ==============================

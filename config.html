@@ -1,150 +1,145 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel de Administração – SinalTech</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-    />
-    <link rel="icon" href="./assets/img/logo.ico" type="image/x-icon" />
-  </head>
+<html lang="pt-BR" class="transition-colors duration-300">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SinalTech Admin</title>
 
-  <body class="min-h-screen flex flex-col bg-gray-50 text-gray-800">
-    <!-- Header -->
-    <header
-      class="bg-gradient-to-r from-blue-700 to-blue-500 text-white py-6 shadow-md"
-    >
-      <div class="container mx-auto px-4 flex justify-between items-center flex-wrap gap-3">
-        <h1 class="text-2xl md:text-3xl font-bold tracking-wide">
-          Administração – SinalTech
-        </h1>
-        <span
-          id="currentTime"
-          class="text-xl font-semibold bg-white/20 rounded-full px-4 py-2 shadow-lg tracking-widest"
-        >
-          --:--:--
-        </span>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+  />
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+
+  <div class="flex min-h-screen">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white dark:bg-gray-800 shadow-xl flex flex-col">
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h1 class="text-2xl font-bold text-blue-600">SinalTech</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Painel Administrativo</p>
       </div>
-    </header>
 
-    <!-- Main -->
-    <main class="flex-grow container mx-auto px-4 py-10">
-      <div class="bg-white rounded-2xl shadow-xl p-6 max-w-5xl mx-auto border border-gray-100">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-bold flex items-center gap-2">
-            <i class="fas fa-bell text-blue-600"></i> Gerenciar Horários
-          </h2>
-          <button
-            id="configBtn"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all"
-          >
-            <i class="fas fa-plus mr-2"></i> Novo Horário
+      <nav class="flex-1 p-4 space-y-2">
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white">
+          <i class="fas fa-bell"></i>
+          Horários
+        </a>
+
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <i class="fas fa-chart-line"></i>
+          Estatísticas
+        </a>
+
+        <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <i class="fas fa-cog"></i>
+          Configurações
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+        Desenvolvido por <strong>Jeysiell Felipe</strong>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO -->
+    <div class="flex-1 flex flex-col">
+
+      <!-- TOPBAR -->
+      <header class="bg-white dark:bg-gray-800 shadow px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <h2 class="text-xl font-semibold">Gerenciar Horários</h2>
+          <span id="currentTime" class="text-sm bg-blue-600 text-white px-3 py-1 rounded-full">
+            --:--:--
+          </span>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <!-- Dark Mode Toggle -->
+          <button id="darkToggle"
+            class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center transition">
+            <i class="fas fa-moon dark:hidden"></i>
+            <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+          </button>
+
+          <button id="configBtn"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Novo
           </button>
         </div>
+      </header>
 
-        <!-- Tabela -->
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-          <table class="min-w-full bg-white">
-            <thead class="bg-gray-100 text-gray-700">
-              <tr>
-                <th class="py-3 px-4 text-left">Período</th>
-                <th class="py-3 px-4 text-left">Hora</th>
-                <th class="py-3 px-4 text-left">Descrição</th>
-                <th class="py-3 px-4 text-left">Música</th>
-                <th class="py-3 px-4 text-left">Duração</th>
-                <th class="py-3 px-4 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="scheduleTable" class="divide-y divide-gray-200">
-              <tr>
-                <td colspan="6" class="text-center py-6 text-gray-500">
-                  Carregando horários...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <!-- MAIN -->
+      <main class="flex-1 p-6 overflow-auto">
 
-      <!-- Modal -->
-      <div id="configModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-        <div id="modalContent" class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform scale-95 opacity-0 transition-all duration-300">
-          <div class="p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h3 id="modalTitle" class="text-xl font-bold flex items-center gap-2">
-                <i class="fas fa-sliders-h text-blue-600"></i> Novo Horário
-              </h3>
-              <button id="closeConfigBtn" class="text-gray-500 hover:text-gray-700 transition">
-                <i class="fas fa-times text-2xl"></i>
-              </button>
-            </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
 
-            <form id="scheduleForm" class="space-y-4">
-              <input type="hidden" id="editMode" value="false" />
-              <input type="hidden" id="editPeriod" />
-              <input type="hidden" id="editTimeOriginal" />
-
-              <div>
-                <label class="block text-gray-700 font-medium mb-1">Período</label>
-                <select id="periodSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2" required>
-                  <option value="">Selecione...</option>
-                  <option value="morning">Manhã</option>
-                  <option value="afternoon">Tarde</option>
-                  <option value="afternoonFriday">Tarde de Sexta</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-gray-700 font-medium mb-1">Horário</label>
-                <input type="time" id="timeInput" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
-              </div>
-
-              <div>
-                <label class="block text-gray-700 font-medium mb-1">Descrição</label>
-                <input type="text" id="nameInput" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ex: Entrada, Intervalo..." required />
-              </div>
-
-              <div>
-                <label class="block text-gray-700 font-medium mb-1">Música</label>
-                <div class="flex gap-2 items-center">
-                  <select id="musicSelect" class="flex-1 border border-gray-300 rounded-lg px-3 py-2">
-                    <option value="musica1.mp3">Tu me Sondas</option>
-                    <option value="musica2.mp3">Eu Amo a Minha Escola</option>
-                    <option value="musica3.mp3">My Lighthouse</option>
-                    <option value="musica4.mp3">Amor Teimoso</option>
-                  </select>
-                  <button type="button" id="previewBtn" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md">
-                    <i class="fas fa-play"></i>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-gray-700 font-medium mb-1">Duração</label>
-                <select id="durationSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                  <option value="5">5 segundos</option>
-                  <option value="8" selected>8 segundos</option>
-                </select>
-              </div>
-
-              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button type="button" id="cancelConfigBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">Cancelar</button>
-                <button type="submit" id="saveConfigBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Salvar</button>
-              </div>
-            </form>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                  <th class="py-3 px-4 text-left">Período</th>
+                  <th class="py-3 px-4 text-left">Hora</th>
+                  <th class="py-3 px-4 text-left">Descrição</th>
+                  <th class="py-3 px-4 text-left">Música</th>
+                  <th class="py-3 px-4 text-left">Duração</th>
+                  <th class="py-3 px-4 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleTable" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr>
+                  <td colspan="6" class="text-center py-6 text-gray-500">
+                    Carregando horários...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+
         </div>
-      </div>
-    </main>
 
-    <footer class="bg-gray-100 py-6 text-center text-gray-600">
-      <p>Desenvolvido por <strong>Jeysiell Felipe</strong> • SinalTech</p>
-    </footer>
+      </main>
 
-    <script src="./config/js/admin.js">
-    </script>
-  </body>
+    </div>
+  </div>
+
+  <!-- SCRIPT DARK MODE -->
+  <script>
+    const toggleBtn = document.getElementById("darkToggle");
+
+    function setTheme(mode) {
+      if (mode === "dark") {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+      }
+    }
+
+    toggleBtn.addEventListener("click", () => {
+      const isDark = document.documentElement.classList.contains("dark");
+      setTheme(isDark ? "light" : "dark");
+    });
+
+    // Carregar preferência salva
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  </script>
+
+  <script src="./config/js/admin.js"></script>
+
+</body>
 </html>
