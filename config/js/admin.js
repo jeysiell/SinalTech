@@ -72,11 +72,25 @@ async function playPreviewAudio(music, duration = 8) {
   }
 }
 
-document.getElementById("previewBtn").onclick = () => {
-  const music = document.getElementById("musicSelect").value;
-  const duration = parseInt(document.getElementById("durationSelect").value);
-  playPreviewAudio(music, duration);
-};
+document.addEventListener("DOMContentLoaded", () => {
+
+  const previewBtn = document.getElementById("previewBtn");
+
+  if (previewBtn) {
+    previewBtn.addEventListener("click", () => {
+      const musicSelect = document.getElementById("musicSelect");
+      const durationSelect = document.getElementById("durationSelect");
+
+      if (!musicSelect || !durationSelect) return;
+
+      playPreviewAudio(
+        musicSelect.value,
+        parseInt(durationSelect.value)
+      );
+    });
+  }
+
+});
 
 // ================= CARREGAR HORÁRIOS =================
 async function loadSchedule() {
