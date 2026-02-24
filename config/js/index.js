@@ -84,65 +84,108 @@ function startScheduler() {
   if (nextTimeout) clearTimeout(nextTimeout);
 
   const now = new Date();
-  const dayOfWeek = now.getDay();
-  let effectivePeriod = currentPeriod;
-  if (effectivePeriod === "afternoon" && dayOfWeek === 5) {
-    effectivePeriod = "afternoonFriday";
+  const todayKey = now.toDateString();
+
+  // 🔄 Reset automático à meia-noite
+  if (startScheduler.lastDay !== todayKey) {
+    sinaisTocadosHoje.clear();
+    startScheduler.lastDay = todayKey;
+    console.log("🌙 Novo dia detectado. Resetando sinais tocados.");
   }
 
-  const signals = schedule[effectivePeriod] || [];
-  if (!signals.length) {
-    console.warn("Nenhum horário configurado para este período.");
+  // 🔎 Pega todos os sinais válidos do dia
+  const allSignals = getAllSignalsForToday();
+
+  if (!allSignals.length) {
+    console.warn("⚠️ Nenhum sinal configurado para hoje.");
     return;
   }
 
-  // Encontra o próximo sinal
-  const nextSignal = signals.find(s => {
-    const [h, m] = s.time.split(":").map(Number);
-    const signalTime = new Date();
-    signalTime.setHours(h, m, 0, 0);
-    return signalTime > now;
-  });
+  // Ordena por horário
+  allSignals.sort((a, b) => a.date - b.date);
+
+  // Próximo sinal futuro
+  const nextSignal = allSignals.find(s => s.date > now);
 
   if (!nextSignal) {
-    console.log("✅ Todos os sinais do período já ocorreram.");
-    updateSignalUI(null, null);
+    console.log("📅 Fim dos sinais de hoje. Aguardando amanhã...");
+    
+    const tomorrow = new Date();
+    tomorrow.setHours(24, 0, 5, 0); // 00:00:05
+    const delay = tomorrow - now;
+
+    nextTimeout = setTimeout(startScheduler, delay);
     return;
   }
 
-  const [h, m] = nextSignal.time.split(":").map(Number);
-  const nextTime = new Date();
-  nextTime.setHours(h, m, 0, 0);
-  const delay = nextTime - now;
+  const delay = nextSignal.date - now;
 
-  console.log(`⏱️ Próximo sinal às ${nextSignal.time} (${(delay / 60000).toFixed(1)} min)`);
+  console.log(`⏱️ Próximo sinal às ${nextSignal.time} (${Math.round(delay/1000)}s)`);
 
   updateSignalUI(null, nextSignal);
 
   nextTimeout = setTimeout(() => {
-    tocarSinal(nextSignal, signals);
+    tocarSinal(nextSignal.original);
   }, delay);
 }
+// =========================================================================//
+// 🧾 Obtém todos os sinais válidos para hoje, considerando o dia da semana//
+// ========================================================================//
+
+function getAllSignalsForToday() {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+
+  let periods = ["morning", "afternoon"];
+  if (dayOfWeek === 5) {
+    periods.push("afternoonFriday");
+  }
+
+  let result = [];
+
+  periods.forEach(period => {
+    const signals = schedule[period] || [];
+
+    signals.forEach(signal => {
+      const [h, m] = signal.time.split(":").map(Number);
+      const date = new Date();
+      date.setHours(h, m, 0, 0);
+
+      result.push({
+        ...signal,
+        period,
+        date,
+        original: signal
+      });
+    });
+  });
+
+  return result;
+}
+
+
 
 // ==============================
 // 🔔 Tocar e reagendar
 // ==============================
-function tocarSinal(signal, signals) {
-  const signalId = `${signal.time}-${currentPeriod}`;
+function tocarSinal(signal) {
+  const signalId = `${signal.time}-${signal.name}-${new Date().toDateString()}`;
+
   if (sinaisTocadosHoje.has(signalId)) {
-    console.log(`⚠️ Sinal ${signal.time} já tocado hoje.`);
+    console.log(`⚠️ Já tocado: ${signal.time}`);
     return;
   }
 
   sinaisTocadosHoje.add(signalId);
-  console.log(`🔔 Tocando sinal: ${signal.name} (${signal.time})`);
 
-  const dur = signal.duration || 5;
-  initAudio(signal.music || "sino.mp3", dur);
-  updateSignalUI(signal, getNextSignal(signals, signal));
+  console.log(`🔔 Tocando: ${signal.name} (${signal.time})`);
 
-  // Agenda o próximo automaticamente
-  startScheduler();
+  initAudio(signal.music || "sino.mp3");
+
+  updateSignalUI(signal, null);
+
+  // 🔁 Reagenda automaticamente
+  setTimeout(startScheduler, 1000);
 }
 
 // ==============================
