@@ -81,14 +81,26 @@ document.getElementById("previewBtn").onclick = () => {
 // ================= CARREGAR HORÁRIOS =================
 async function loadSchedule() {
   const tbody = document.getElementById("scheduleTable");
+
+  if (!tbody) {
+    console.error("scheduleTable não encontrado.");
+    return;
+  }
+
   tbody.innerHTML =
-    `<tr><td colspan="6" class="text-center py-6 text-gray-500">Carregando...</td></tr>`;
+    `<tr><td colspan="6" class="text-center py-6 text-gray-500">
+      Carregando...
+    </td></tr>`;
 
   try {
     const res = await fetch(API_URL);
-    if (!res.ok) throw new Error();
+
+    if (!res.ok) {
+      throw new Error("Erro HTTP: " + res.status);
+    }
 
     const data = await res.json();
+
     tbody.innerHTML = "";
 
     const periods = {
@@ -97,21 +109,23 @@ async function loadSchedule() {
       afternoonFriday: "Tarde de Sexta",
     };
 
-    Object.entries(periods).forEach(([key, label]) => {
+    let hasData = false;
 
-      const list = (data[key] || []).sort((a, b) =>
-        a.time.localeCompare(b.time)
-      );
+    Object.entries(periods).forEach(([key, label]) => {
+      const list = Array.isArray(data[key]) ? data[key] : [];
+
+      list.sort((a, b) => a.time.localeCompare(b.time));
 
       list.forEach((s) => {
+        hasData = true;
+
         const tr = document.createElement("tr");
-        tr.classList.add("hover:bg-gray-50", "cursor-pointer");
 
         tr.innerHTML = `
           <td class="py-3 px-4">${label}</td>
           <td class="py-3 px-4">${s.time}</td>
           <td class="py-3 px-4">${s.name}</td>
-          <td class="py-3 px-4">${musicLabels[s.music] || s.music}</td>
+          <td class="py-3 px-4">${musicLabels?.[s.music] || s.music}</td>
           <td class="py-3 px-4">${s.duration || 8}s</td>
           <td class="py-3 px-4 text-center">
             <button class="text-red-600 hover:text-red-800 transition"
@@ -126,14 +140,22 @@ async function loadSchedule() {
       });
     });
 
-  } catch {
+    if (!hasData) {
+      tbody.innerHTML =
+        `<tr><td colspan="6" class="text-center py-6 text-gray-400">
+          Nenhum horário cadastrado
+        </td></tr>`;
+    }
+
+  } catch (err) {
+    console.error("Erro ao carregar:", err);
+
     tbody.innerHTML =
       `<tr><td colspan="6" class="text-center text-red-600 py-6">
         Erro ao carregar horários
       </td></tr>`;
   }
 }
-
 // ================= EDITAR =================
 function openEditModal(period, signal) {
   document.getElementById("editMode").value = "true";
@@ -254,4 +276,6 @@ document.getElementById("scheduleForm").onsubmit = async (e) => {
   }
 };
 
-loadSchedule();
+document.addEventListener("DOMContentLoaded", () => {
+  loadSchedule();
+});
