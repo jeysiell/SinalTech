@@ -216,8 +216,8 @@ const closeModal = () => {
   setTimeout(() => modal.classList.add("hidden"), 200);
 };
 
-document.getElementById("closeConfigBtn").onclick = closeModal;
-document.getElementById("cancelConfigBtn").onclick = closeModal;
+// document.getElementById("closeConfigBtn").onclick = closeModal;
+// document.getElementById("cancelConfigBtn").onclick = closeModal;
 
 document.getElementById("configBtn").onclick = () => {
   document.getElementById("editMode").value = "false";
