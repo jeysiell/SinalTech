@@ -5,13 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SinalTech Enterprise</title>
 
-    <!-- 🔥 Evita flash branco no dark mode -->
+    <!-- 🔧 Config Dark Mode -->
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        darkMode: "class",
+      };
+    </script>
+
+    <!-- 🔥 Evita flash branco -->
     <script>
       if (localStorage.getItem("darkMode") === "true") {
         document.documentElement.classList.add("dark");
       }
     </script>
 
+    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link
@@ -21,9 +30,15 @@
 
     <style>
       @keyframes signalFlash {
-        0% { background-color: #0f172a; }
-        50% { background-color: #1d4ed8; }
-        100% { background-color: #0f172a; }
+        0% {
+          background-color: #0f172a;
+        }
+        50% {
+          background-color: #1d4ed8;
+        }
+        100% {
+          background-color: #0f172a;
+        }
       }
 
       .signal-active {
@@ -31,9 +46,15 @@
       }
 
       @keyframes pulseScale {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.08); }
-        100% { transform: scale(1); }
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.08);
+        }
+        100% {
+          transform: scale(1);
+        }
       }
 
       .pulse-signal {
@@ -42,8 +63,9 @@
     </style>
   </head>
 
-  <body class="bg-slate-100 dark:bg-slate-950 min-h-screen flex transition-colors duration-500">
-
+  <body
+    class="bg-slate-100 dark:bg-slate-950 min-h-screen flex transition-colors duration-500"
+  >
     <!-- ================= OVERLAY ================= -->
     <div
       id="overlayWakeup"
@@ -81,7 +103,9 @@
       id="sidebar"
       class="fixed md:static inset-y-0 left-0 w-64 bg-slate-900 text-white transform -translate-x-full md:translate-x-0 transition duration-300 z-40 flex flex-col"
     >
-      <div class="px-6 py-6 border-b border-slate-800 flex justify-between items-center">
+      <div
+        class="px-6 py-6 border-b border-slate-800 flex justify-between items-center"
+      >
         <h2 class="text-2xl font-bold">Sinal CAB</h2>
         <button id="closeSidebar" class="md:hidden text-xl">✕</button>
       </div>
@@ -94,7 +118,6 @@
     </aside>
 
     <div class="flex-1 flex flex-col">
-
       <!-- ================= HEADER ================= -->
       <header
         class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex justify-between items-center"
@@ -138,20 +161,25 @@
 
       <!-- ================= MAIN ================= -->
       <main class="flex-1 p-8 space-y-8">
-
         <!-- STATUS CARDS -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
+          >
             <p class="text-xs uppercase tracking-wide text-slate-500">
               Último Sinal
             </p>
-            <h2 id="currentSignalTime" class="text-4xl font-bold mt-2">--:--</h2>
+            <h2 id="currentSignalTime" class="text-4xl font-bold mt-2">
+              --:--
+            </h2>
             <p id="currentSignalName" class="text-slate-500 mt-2">
               Aguardando...
             </p>
           </div>
 
-          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
+          >
             <p class="text-xs uppercase tracking-wide text-slate-500">
               Próximo Sinal
             </p>
@@ -161,8 +189,12 @@
         </div>
 
         <!-- TABELA -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6"
+        >
+          <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+          >
             <h3 class="text-lg font-semibold dark:text-white">
               Filtros de Sinais
             </h3>

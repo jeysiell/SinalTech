@@ -27,6 +27,8 @@ async function loadSchedule() {
     console.error("Erro ao carregar horários:", err);
     schedule = {};
   }
+  const select = document.getElementById("periodFilter");
+  if (select) select.value = currentPeriod;
 }
 
 // ==============================
@@ -142,8 +144,18 @@ function renderScheduleByPeriod(period) {
   tableBody.classList.remove("hidden");
   tableBody.innerHTML = "";
 
-  (schedule[period] || []).forEach((signal, index) => {
+  const signals = schedule[period] || [];
+
+  // 🔹 Atualiza o nome do período (UMA VEZ)
+  const title = document.getElementById("currentPeriodName");
+  if (title) {
+    title.textContent = getPeriodLabel(period);
+  }
+
+  // 🔹 Renderiza as linhas
+  signals.forEach((signal, index) => {
     const row = document.createElement("tr");
+
     row.className =
       index % 2 === 0
         ? "bg-slate-50 dark:bg-slate-800"
@@ -153,20 +165,14 @@ function renderScheduleByPeriod(period) {
       musicLabels[signal.music] || signal.music || "🔔 Sino Padrão";
 
     row.innerHTML = `
-      <td class="py-3 px-4">${signal.time}</td>
-      <td class="py-3 px-4 font-medium">${signal.name}</td>
-      <td class="py-3 px-4">${friendlyMusic}</td>
-      <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
-    `;
+    <td class="py-3 px-4">${signal.time}</td>
+    <td class="py-3 px-4 font-medium">${signal.name}</td>
+    <td class="py-3 px-4">${friendlyMusic}</td>
+    <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
+  `;
 
     tableBody.appendChild(row);
-    const title = document.getElementById("currentPeriodName");
-    if (title) {
-      title.textContent = getPeriodLabel(period);
-    }
   });
-  const select = document.getElementById("periodFilter");
-if (select) select.value = currentPeriod;
 }
 function getPeriodLabel(period) {
   const labels = {
@@ -278,16 +284,32 @@ function getLastSignalToday() {
 // ==============================
 function initDarkMode() {
   const toggle = document.getElementById("darkToggle");
+  if (!toggle) return;
 
+  // Atualiza ícone
+  function updateIcon() {
+    if (document.documentElement.classList.contains("dark")) {
+      toggle.textContent = "☀️";
+    } else {
+      toggle.textContent = "🌙";
+    }
+  }
+
+  // Estado salvo
   if (localStorage.getItem("darkMode") === "true") {
     document.documentElement.classList.add("dark");
   }
 
-  toggle?.addEventListener("click", () => {
+  updateIcon();
+
+  toggle.addEventListener("click", () => {
     document.documentElement.classList.toggle("dark");
 
     const isDark = document.documentElement.classList.contains("dark");
+
     localStorage.setItem("darkMode", isDark);
+
+    updateIcon();
   });
 }
 
@@ -392,5 +414,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("closeSidebar")?.addEventListener("click", () => {
     document.getElementById("sidebar")?.classList.add("-translate-x-full");
+  });
+  // ==============================
+  // 🎛 FILTRO DE PERÍODO
+  // ==============================
+  const periodFilter = document.getElementById("periodFilter");
+
+  periodFilter?.addEventListener("change", (e) => {
+    const selected = e.target.value;
+
+    currentPeriod = selected; // atualiza período ativo
+    renderScheduleByPeriod(selected);
   });
 });
