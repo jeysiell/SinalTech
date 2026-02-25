@@ -46,33 +46,33 @@ function detectCurrentPeriod() {
 // 🎶 Tocar sinal com fade
 // ==============================
 // ==============================
-// 🎶 ÁUDIO PROFISSIONAL – 10s EXATOS + ANTI-TRAVAMENTO
+// 🎶 ÁUDIO PROFISSIONAL – 12s FIXOS SEM FADE IN
 // ==============================
-async function initAudio(music = "sino.mp3", duration = 10, volume = 0.8) {
+async function initAudio(music = "sino.mp3", duration = 12, volume = 0.9) {
   try {
-    // 🔁 Garante apenas 1 AudioContext
+    // 🔁 Garante 1 único AudioContext
     if (!audioContext || audioContext.state === "closed") {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    // 🔄 Se estiver suspenso (Chrome faz isso sozinho)
+    // 🔄 Se navegador suspender
     if (audioContext.state === "suspended") {
       await audioContext.resume();
     }
 
-    // 🛑 Para qualquer áudio anterior com segurança
+    // 🛑 Para áudio anterior com segurança
     if (currentSource) {
       try {
-        currentSource.gainNode.gain.cancelScheduledValues(audioContext.currentTime);
-        currentSource.gainNode.gain.setValueAtTime(0, audioContext.currentTime);
         currentSource.audio.pause();
+        currentSource.source.disconnect();
+        currentSource.gainNode.disconnect();
       } catch {}
       currentSource = null;
     }
 
     const audio = new Audio(`./assets/audio/${music}`);
-    audio.loop = true; // 🔁 repete se for menor que 10s
     audio.preload = "auto";
+    audio.loop = false; // ❌ não precisa loop (áudios já têm 12s+)
 
     const source = audioContext.createMediaElementSource(audio);
     const gainNode = audioContext.createGain();
@@ -81,13 +81,13 @@ async function initAudio(music = "sino.mp3", duration = 10, volume = 0.8) {
     gainNode.connect(audioContext.destination);
 
     const now = audioContext.currentTime;
-    const fadeIn = 1;
-    const fadeOut = 1;
-    const totalDuration = duration; // 🔥 10 segundos exatos
+    const fadeOut = 1; // só fade final
+    const totalDuration = duration;
 
-    // 🎚️ Fade profissional
-    gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(volume, now + fadeIn);
+    // 🔊 Começa direto no volume máximo (SEM fade in)
+    gainNode.gain.setValueAtTime(volume, now);
+
+    // 🎚️ Fade-out suave no último segundo
     gainNode.gain.setValueAtTime(volume, now + totalDuration - fadeOut);
     gainNode.gain.linearRampToValueAtTime(0, now + totalDuration);
 
@@ -95,10 +95,11 @@ async function initAudio(music = "sino.mp3", duration = 10, volume = 0.8) {
 
     currentSource = {
       audio,
+      source,
       gainNode
     };
 
-    // ⏱️ Para exatamente em 10 segundos
+    // ⏱️ Para exatamente em 12 segundos
     setTimeout(() => {
       try {
         audio.pause();
@@ -112,7 +113,7 @@ async function initAudio(music = "sino.mp3", duration = 10, volume = 0.8) {
   } catch (err) {
     console.error("🔴 Falha no áudio:", err);
 
-    // 🔄 tentativa automática de recuperação
+    // 🔄 Recuperação automática
     try {
       if (audioContext) {
         await audioContext.close();
@@ -200,7 +201,7 @@ function tocarSinal(signal) {
     triggerSignalAnimation();
   }
 
-  initAudio(signal.music || "sino.mp3", 10);
+  initAudio(signal.music || "sino.mp3", 12);
 
   const nextSignal = getNextFutureSignal();
   updateSignalUI(signal, nextSignal);
