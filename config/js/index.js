@@ -62,7 +62,6 @@ async function initAudio(music = "sino.mp3", duration = null, volume = 0.7) {
     }
 
     const audioElement = new Audio(`./assets/audio/${music}`);
-    audioElement.crossOrigin = "anonymous";
     audioElement.preload = "auto";
 
     const source = audioContext.createMediaElementSource(audioElement);
@@ -112,7 +111,6 @@ function startScheduler() {
   if (startScheduler.lastDay !== todayKey) {
     sinaisTocadosHoje.clear();
     startScheduler.lastDay = todayKey;
-    console.log("🌙 Novo dia detectado. Resetando sinais.");
   }
 
   const allSignals = getAllSignalsForToday();
@@ -167,40 +165,55 @@ function getAllSignalsForToday() {
 // ==============================
 function tocarSinal(signal) {
   const signalId = `${signal.time}-${signal.name}-${new Date().toDateString()}`;
-
   if (sinaisTocadosHoje.has(signalId)) return;
+
   sinaisTocadosHoje.add(signalId);
 
   console.log(`🔔 Tocando: ${signal.name} (${signal.time})`);
+
+  // 🔥 animação visual
+  if (typeof triggerSignalAnimation === "function") {
+    triggerSignalAnimation();
+  }
 
   initAudio(signal.music || "sino.mp3", signal.duration || null);
 
   const nextSignal = getNextFutureSignal();
   updateSignalUI(signal, nextSignal);
 
-  setTimeout(startScheduler, 1000);
+  setTimeout(() => {
+  startScheduler();
+}, 500);
 }
 
 function getNextFutureSignal() {
   const now = new Date();
-  return getAllSignalsForToday()
-    .filter(s => s.date > now)
-    .sort((a, b) => a.date - b.date)[0] || null;
+  const signals = getAllSignalsForToday();
+
+  let next = null;
+
+  for (const s of signals) {
+    if (s.date > now && (!next || s.date < next.date)) {
+      next = s;
+    }
+  }
+
+  return next;
 }
 
 // ==============================
 // 🧱 UI
 // ==============================
 function updateSignalUI(currentSignal, nextSignal) {
-  const safeSet = (id, value) => {
+  const set = (id, val) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = value;
+    if (el) el.textContent = val;
   };
 
-  safeSet("currentSignalTime", currentSignal?.time || "--:--");
-  safeSet("currentSignalName", currentSignal?.name || "Aguardando...");
-  safeSet("nextSignalTime", nextSignal?.time || "--:--");
-  safeSet("nextSignalName", nextSignal?.name || "Fim do período");
+  set("currentSignalTime", currentSignal?.time || "--:--");
+  set("currentSignalName", currentSignal?.name || "Aguardando...");
+  set("nextSignalTime", nextSignal?.time || "--:--");
+  set("nextSignalName", nextSignal?.name || "Fim do período");
 }
 
 function getLastSignalToday() {
@@ -222,6 +235,14 @@ function renderAllScheduleTables() {
     afternoonFriday: "scheduleTable-afternoonFriday",
   };
 
+  const musicLabels = {
+    "musica1.mp3": "🎵 Tu Me Sondas",
+    "musica2.mp3": "🎵 Eu Amo Minha Escola",
+    "musica3.mp3": "🎵 My Lighthouse",
+    "musica4.mp3": "🎵 Amor Teimoso",
+    "sino.mp3": "🔔 Sino Padrão"
+  };
+
   periods.forEach(period => {
     const tableBody = document.getElementById(tableIds[period]);
     if (!tableBody) return;
@@ -232,19 +253,57 @@ function renderAllScheduleTables() {
       const row = document.createElement("tr");
       row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
 
+      const friendlyMusic =
+        musicLabels[signal.music] || signal.music || "🔔 Sino Padrão";
+
       row.innerHTML = `
         <td class="py-3 px-4">${signal.time}</td>
         <td class="py-3 px-4 font-medium">${signal.name}</td>
-        <td class="py-3 px-4">${signal.music || "sino.mp3"}</td>
-        <td class="py-3 px-4">${signal.duration || ""}</td>
+        <td class="py-3 px-4">${friendlyMusic}</td>
+        <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
       `;
+
       tableBody.appendChild(row);
     });
   });
 }
 
 // ==============================
-// 🚀 Inicialização
+// 🌐 Wake-up da API + Overlay
+// ==============================
+async function wakeUpAPI() {
+  const status = document.getElementById("statusWake");
+  const btn = document.getElementById("btnWakeOk");
+
+  try {
+    status.textContent = "Conectando à API...";
+    btn.disabled = true;
+
+    const response = await fetch("https://sinal.onrender.com/api/schedule");
+    if (!response.ok) throw new Error();
+
+    status.textContent = "✅ Sistema pronto!";
+    btn.disabled = false;
+    btn.classList.remove("bg-slate-700", "opacity-50", "cursor-not-allowed");
+    btn.classList.add("bg-green-500", "hover:bg-green-600", "cursor-pointer");
+
+  } catch {
+    status.textContent = "❌ Tentando reconectar...";
+    setTimeout(wakeUpAPI, 3000);
+  }
+}
+
+// ==============================
+// ⏰ Relógio
+// ==============================
+function updateClock() {
+  const now = new Date();
+  const el = document.getElementById("currentTime");
+  if (el) el.textContent = now.toLocaleTimeString("pt-BR");
+}
+
+// ==============================
+// 🚀 Inicialização ÚNICA
 // ==============================
 document.addEventListener("DOMContentLoaded", async () => {
   await wakeUpAPI();
@@ -260,25 +319,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   updateClock();
   setInterval(updateClock, 1000);
-});
 
-// ==============================
-// 🌐 Wake API
-// ==============================
-async function wakeUpAPI() {
-  try {
-    await fetch("https://sinal.onrender.com/api/schedule");
-  } catch {
-    setTimeout(wakeUpAPI, 3000);
+  // 🔹 Botão fechar overlay
+  const btn = document.getElementById("btnWakeOk");
+  const overlay = document.getElementById("overlayWakeup");
+
+  if (btn && overlay) {
+    btn.addEventListener("click", () => {
+      overlay.classList.add("opacity-0", "pointer-events-none");
+
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 600);
+    });
   }
-}
-
-// ==============================
-// ⏰ Relógio
-// ==============================
-function updateClock() {
-  const now = new Date();
-  const time = now.toLocaleTimeString("pt-BR");
-  const el = document.getElementById("currentTime");
-  if (el) el.textContent = time;
-}
+});
