@@ -201,7 +201,7 @@ function tocarSinal(signal) {
     triggerSignalAnimation();
   }
 
-  initAudio(signal.music || "sino.mp3", 15);
+  initAudio(signal.music, signal.duration);
 
   const nextSignal = getNextFutureSignal();
   updateSignalUI(signal, nextSignal);
