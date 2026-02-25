@@ -6,22 +6,10 @@
     <title>SinalTech Enterprise</title>
 
     <!-- 🔧 Config Dark Mode -->
-    <script>
-      window.tailwind = window.tailwind || {};
-      window.tailwind.config = {
-        darkMode: "class",
-      };
-    </script>
-
-    <!-- 🔥 Evita flash branco -->
-    <script>
-      if (localStorage.getItem("darkMode") === "true") {
-        document.documentElement.classList.add("dark");
-      }
-    </script>
-
-    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: "class" };
+    </script>
 
     <link
       rel="stylesheet"
@@ -64,7 +52,7 @@
   </head>
 
   <body
-    class="bg-slate-100 dark:bg-slate-950 min-h-screen flex transition-colors duration-500"
+    class="bg-slate-100 dark:bg-slate-950 dark:text-white min-h-screen flex transition-colors duration-500"
   >
     <!-- ================= OVERLAY ================= -->
     <div
