@@ -1,131 +1,185 @@
 // ==============================
-// 🔔 Sistema de toque automático
+// 🔔 SISTEMA SINALTECH ENTERPRISE
 // ==============================
 
 let schedule = {};
-let currentPeriod = detectCurrentPeriod();
+let currentPeriod = null;
 let nextTimeout = null;
 let sinaisTocadosHoje = new Set();
 let audioContext = null;
 let currentSource = null;
+let countdownInterval = null;
 
 // ==============================
-// 🔹 Carregar horários da API
+// 🔹 CARREGAR HORÁRIOS
 // ==============================
 async function loadSchedule() {
   try {
     const response = await fetch("https://sinal.onrender.com/api/schedule");
-    if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
+    if (!response.ok) throw new Error();
 
     schedule = await response.json();
-    console.log("✅ Horários carregados:", schedule);
 
     currentPeriod = detectCurrentPeriod();
-    renderAllScheduleTables();
+    renderScheduleByPeriod(currentPeriod);
     startScheduler();
-
-  } catch (error) {
-    console.error("❌ Erro ao carregar horários:", error);
+  } catch (err) {
+    console.error("Erro ao carregar horários:", err);
     schedule = {};
   }
 }
 
 // ==============================
-// 🕒 Detectar período atual
+// 🕒 DETECTAR PERÍODO
 // ==============================
 function detectCurrentPeriod() {
   const now = new Date();
-  const totalMinutes = now.getHours() * 60 + now.getMinutes();
+  const total = now.getHours() * 60 + now.getMinutes();
 
-  if (totalMinutes >= 360 && totalMinutes < 775) return "morning";
-  if (totalMinutes >= 775 && totalMinutes < 1140) return "afternoon";
+  if (total >= 360 && total < 775) return "morning";
+  if (total >= 775 && total < 1140) return "afternoon";
   return "night";
 }
 
 // ==============================
-// 🎶 Tocar sinal com fade
+// ⏳ CONTADOR ÚNICO
 // ==============================
+function startRealCountdown(targetDate) {
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  const el = document.getElementById("countdown");
+  if (!el || !targetDate) return;
+
+  countdownInterval = setInterval(() => {
+    const diff = targetDate - new Date();
+
+    if (diff <= 0) {
+      el.textContent = "00:00";
+      clearInterval(countdownInterval);
+      return;
+    }
+
+    const m = Math.floor(diff / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+
+    el.textContent =
+      String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }, 1000);
+}
+
 // ==============================
-// 🎶 ÁUDIO PROFISSIONAL – 12s FIXOS SEM FADE IN
+// 🎶 ÁUDIO
 // ==============================
 async function initAudio(music = "sino.mp3", duration = 12, volume = 0.9) {
   try {
-    // 🔁 Garante 1 único AudioContext
     if (!audioContext || audioContext.state === "closed") {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    // 🔄 Se navegador suspender
     if (audioContext.state === "suspended") {
       await audioContext.resume();
     }
 
-    // 🛑 Para áudio anterior com segurança
     if (currentSource) {
-      try {
-        currentSource.audio.pause();
-        currentSource.source.disconnect();
-        currentSource.gainNode.disconnect();
-      } catch {}
+      currentSource.audio.pause();
+      currentSource.source.disconnect();
+      currentSource.gain.disconnect();
       currentSource = null;
     }
 
     const audio = new Audio(`./assets/audio/${music}`);
-    audio.preload = "auto";
-    audio.loop = false; // ❌ não precisa loop (áudios já têm 12s+)
-
     const source = audioContext.createMediaElementSource(audio);
-    const gainNode = audioContext.createGain();
+    const gain = audioContext.createGain();
 
-    source.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    source.connect(gain);
+    gain.connect(audioContext.destination);
 
     const now = audioContext.currentTime;
-    const fadeOut = 1; // só fade final
-    const totalDuration = duration;
 
-    // 🔊 Começa direto no volume máximo (SEM fade in)
-    gainNode.gain.setValueAtTime(volume, now);
-
-    // 🎚️ Fade-out suave no último segundo
-    gainNode.gain.setValueAtTime(volume, now + totalDuration - fadeOut);
-    gainNode.gain.linearRampToValueAtTime(0, now + totalDuration);
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.setValueAtTime(volume, now + duration - 1);
+    gain.gain.linearRampToValueAtTime(0, now + duration);
 
     await audio.play();
 
-    currentSource = {
-      audio,
-      source,
-      gainNode
-    };
+    currentSource = { audio, source, gain };
 
-    // ⏱️ Para exatamente em 12 segundos
     setTimeout(() => {
-      try {
-        audio.pause();
-        audio.currentTime = 0;
-        source.disconnect();
-        gainNode.disconnect();
-      } catch {}
+      audio.pause();
+      source.disconnect();
+      gain.disconnect();
       currentSource = null;
-    }, totalDuration * 1000);
-
+    }, duration * 1000);
   } catch (err) {
-    console.error("🔴 Falha no áudio:", err);
-
-    // 🔄 Recuperação automática
-    try {
-      if (audioContext) {
-        await audioContext.close();
-      }
-    } catch {}
-
-    audioContext = null;
+    console.error("Erro áudio:", err);
   }
 }
 
+function renderScheduleByPeriod(period) {
+  const tableIds = {
+    morning: "scheduleTable-morning",
+    afternoon: "scheduleTable-afternoon",
+    afternoonFriday: "scheduleTable-afternoonFriday",
+  };
+
+  const musicLabels = {
+    "musica1.mp3": "🎵 Tu Me Sondas",
+    "musica2.mp3": "🎵 Eu Amo Minha Escola",
+    "musica3.mp3": "🎵 My Lighthouse",
+    "musica4.mp3": "🎵 Amor Teimoso",
+    "sino.mp3": "🔔 Sino Padrão",
+  };
+
+  // 🔹 Esconde todas as tabelas
+  Object.values(tableIds).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  });
+
+  const tableBody = document.getElementById(tableIds[period]);
+  if (!tableBody) return;
+
+  tableBody.classList.remove("hidden");
+  tableBody.innerHTML = "";
+
+  (schedule[period] || []).forEach((signal, index) => {
+    const row = document.createElement("tr");
+    row.className =
+      index % 2 === 0
+        ? "bg-slate-50 dark:bg-slate-800"
+        : "bg-white dark:bg-slate-900";
+
+    const friendlyMusic =
+      musicLabels[signal.music] || signal.music || "🔔 Sino Padrão";
+
+    row.innerHTML = `
+      <td class="py-3 px-4">${signal.time}</td>
+      <td class="py-3 px-4 font-medium">${signal.name}</td>
+      <td class="py-3 px-4">${friendlyMusic}</td>
+      <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
+    `;
+
+    tableBody.appendChild(row);
+    const title = document.getElementById("currentPeriodName");
+    if (title) {
+      title.textContent = getPeriodLabel(period);
+    }
+  });
+  const select = document.getElementById("periodFilter");
+if (select) select.value = currentPeriod;
+}
+function getPeriodLabel(period) {
+  const labels = {
+    morning: "Período da Manhã ☀️",
+    afternoon: "Período da Tarde 🌤️",
+    afternoonFriday: "Sexta Especial 🎉",
+  };
+
+  return labels[period] || "Período";
+}
+
 // ==============================
-// 🧭 Agendador inteligente
+// 🧭 AGENDADOR
 // ==============================
 function startScheduler() {
   if (nextTimeout) clearTimeout(nextTimeout);
@@ -138,42 +192,34 @@ function startScheduler() {
     startScheduler.lastDay = todayKey;
   }
 
-  const allSignals = getAllSignalsForToday();
-  if (!allSignals.length) return;
+  const signals = getAllSignalsForToday().sort((a, b) => a.date - b.date);
 
-  allSignals.sort((a, b) => a.date - b.date);
-  const nextSignal = allSignals.find(s => s.date > now);
+  const next = signals.find((s) => s.date > now);
 
-  if (!nextSignal) {
-    const tomorrow = new Date();
-    tomorrow.setHours(24, 0, 5, 0);
-    nextTimeout = setTimeout(startScheduler, tomorrow - now);
-    return;
-  }
+  if (!next) return;
 
-  const delay = nextSignal.date - now;
-  const lastSignal = getLastSignalToday();
-  updateSignalUI(lastSignal, nextSignal);
+  updateSignalUI(getLastSignalToday(), next);
+  startRealCountdown(next.date);
 
   nextTimeout = setTimeout(() => {
-    tocarSinal(nextSignal.original);
-  }, delay);
+    tocarSinal(next.original);
+  }, next.date - now);
 }
 
 // ==============================
-// 🧾 Sinais do dia
+// 📅 SINAIS DO DIA
 // ==============================
 function getAllSignalsForToday() {
   const now = new Date();
-  const dayOfWeek = now.getDay();
+  const day = now.getDay();
 
   let periods = ["morning", "afternoon"];
-  if (dayOfWeek === 5) periods.push("afternoonFriday");
+  if (day === 5) periods.push("afternoonFriday");
 
   let result = [];
 
-  periods.forEach(period => {
-    (schedule[period] || []).forEach(signal => {
+  periods.forEach((period) => {
+    (schedule[period] || []).forEach((signal) => {
       const [h, m] = signal.time.split(":").map(Number);
       const date = new Date();
       date.setHours(h, m, 0, 0);
@@ -186,176 +232,165 @@ function getAllSignalsForToday() {
 }
 
 // ==============================
-// 🔔 Tocar sinal
+// 🔔 TOCAR
 // ==============================
 function tocarSinal(signal) {
-  const signalId = `${signal.time}-${signal.name}-${new Date().toDateString()}`;
-  if (sinaisTocadosHoje.has(signalId)) return;
+  const id = `${signal.time}-${signal.name}-${new Date().toDateString()}`;
+  if (sinaisTocadosHoje.has(id)) return;
 
-  sinaisTocadosHoje.add(signalId);
+  sinaisTocadosHoje.add(id);
 
-  console.log(`🔔 Tocando: ${signal.name} (${signal.time})`);
-
-  // 🔥 animação visual
   if (typeof triggerSignalAnimation === "function") {
     triggerSignalAnimation();
   }
 
   initAudio(signal.music, signal.duration);
 
-  const nextSignal = getNextFutureSignal();
-  updateSignalUI(signal, nextSignal);
-
-  setTimeout(() => {
-  startScheduler();
-}, 500);
-}
-
-function getNextFutureSignal() {
-  const now = new Date();
-  const signals = getAllSignalsForToday();
-
-  let next = null;
-
-  for (const s of signals) {
-    if (s.date > now && (!next || s.date < next.date)) {
-      next = s;
-    }
-  }
-
-  return next;
+  setTimeout(startScheduler, 500);
 }
 
 // ==============================
 // 🧱 UI
 // ==============================
-function updateSignalUI(currentSignal, nextSignal) {
+function updateSignalUI(current, next) {
   const set = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
 
-  set("currentSignalTime", currentSignal?.time || "--:--");
-  set("currentSignalName", currentSignal?.name || "Aguardando...");
-  set("nextSignalTime", nextSignal?.time || "--:--");
-  set("nextSignalName", nextSignal?.name || "Fim do período");
+  set("currentSignalTime", current?.time || "--:--");
+  set("currentSignalName", current?.name || "Aguardando...");
+  set("nextSignalTime", next?.time || "--:--");
+  set("nextSignalName", next?.name || "Fim do período");
 }
 
 function getLastSignalToday() {
   const now = new Date();
-  return getAllSignalsForToday()
-    .filter(s => s.date <= now)
-    .sort((a, b) => b.date - a.date)[0] || null;
+  return (
+    getAllSignalsForToday()
+      .filter((s) => s.date <= now)
+      .sort((a, b) => b.date - a.date)[0] || null
+  );
 }
 
 // ==============================
-// 📊 Renderizar tabelas
+// 🌙 DARK MODE PROFISSIONAL
 // ==============================
-function renderAllScheduleTables() {
-  const periods = ["morning", "afternoon", "afternoonFriday"];
+function initDarkMode() {
+  const toggle = document.getElementById("darkToggle");
 
-  const tableIds = {
-    morning: "scheduleTable-morning",
-    afternoon: "scheduleTable-afternoon",
-    afternoonFriday: "scheduleTable-afternoonFriday",
-  };
+  if (localStorage.getItem("darkMode") === "true") {
+    document.documentElement.classList.add("dark");
+  }
 
-  const musicLabels = {
-    "musica1.mp3": "🎵 Tu Me Sondas",
-    "musica2.mp3": "🎵 Eu Amo Minha Escola",
-    "musica3.mp3": "🎵 My Lighthouse",
-    "musica4.mp3": "🎵 Amor Teimoso",
-    "sino.mp3": "🔔 Sino Padrão"
-  };
+  toggle?.addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark");
 
-  periods.forEach(period => {
-    const tableBody = document.getElementById(tableIds[period]);
-    if (!tableBody) return;
-
-    tableBody.innerHTML = "";
-
-    (schedule[period] || []).forEach((signal, index) => {
-      const row = document.createElement("tr");
-      row.className = index % 2 === 0 ? "bg-gray-50" : "bg-white";
-
-      const friendlyMusic =
-        musicLabels[signal.music] || signal.music || "🔔 Sino Padrão";
-
-      row.innerHTML = `
-        <td class="py-3 px-4">${signal.time}</td>
-        <td class="py-3 px-4 font-medium">${signal.name}</td>
-        <td class="py-3 px-4">${friendlyMusic}</td>
-        <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
-      `;
-
-      tableBody.appendChild(row);
-    });
+    const isDark = document.documentElement.classList.contains("dark");
+    localStorage.setItem("darkMode", isDark);
   });
 }
 
 // ==============================
-// 🌐 Wake-up da API + Overlay
+// ⏰ RELÓGIO
+// ==============================
+function initClock() {
+  const el = document.getElementById("currentTime");
+
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString("pt-BR");
+  }, 1000);
+}
+
+// ==============================
+// 🚀 WAKE UP API (Render Cold Start)
 // ==============================
 async function wakeUpAPI() {
+  const overlay = document.getElementById("overlayWakeup");
   const status = document.getElementById("statusWake");
-  const btn = document.getElementById("btnWakeOk");
+  const button = document.getElementById("btnWakeOk");
+  const icon = document.getElementById("wakeIcon");
 
   try {
-    status.textContent = "Conectando à API...";
-    btn.disabled = true;
+    status.textContent = "Iniciando servidor...";
 
     const response = await fetch("https://sinal.onrender.com/api/schedule");
+
     if (!response.ok) throw new Error();
 
-    status.textContent = "✅ Sistema pronto!";
-    btn.disabled = false;
-    btn.classList.remove("bg-slate-700", "opacity-50", "cursor-not-allowed");
-    btn.classList.add("bg-green-500", "hover:bg-green-600", "cursor-pointer");
+    // ✅ SUCESSO
+    status.textContent = "Sistema online";
 
-  } catch {
-    status.textContent = "❌ Tentando reconectar...";
-    setTimeout(wakeUpAPI, 3000);
+    // 🔥 TRANSFORMA SPINNER EM CHECK VERDE
+    icon.classList.remove(
+      "animate-spin",
+      "border-4",
+      "border-blue-500",
+      "border-t-transparent",
+      "rounded-full"
+    );
+
+    icon.innerHTML = `
+      <i class="fas fa-check text-white text-xl"></i>
+    `;
+
+    icon.classList.add(
+      "bg-green-500",
+      "flex",
+      "items-center",
+      "justify-center",
+      "rounded-full",
+      "scale-0"
+    );
+
+    // animação de entrada
+    setTimeout(() => {
+      icon.classList.add("transition", "duration-300", "scale-100");
+    }, 50);
+
+    button.disabled = false;
+    button.classList.remove("opacity-50", "cursor-not-allowed");
+    button.classList.add("bg-green-600", "hover:bg-green-700");
+
+    button.addEventListener("click", () => {
+      overlay.classList.add("opacity-0");
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 300);
+    });
+  } catch (err) {
+    status.textContent = "Erro ao conectar ❌";
+
+    icon.classList.remove("animate-spin");
+    icon.innerHTML = `<i class="fas fa-times text-white text-xl"></i>`;
+    icon.classList.add(
+      "bg-red-500",
+      "flex",
+      "items-center",
+      "justify-center",
+      "rounded-full"
+    );
+
+    console.error("Wake error:", err);
   }
 }
 
 // ==============================
-// ⏰ Relógio
-// ==============================
-function updateClock() {
-  const now = new Date();
-  const el = document.getElementById("currentTime");
-  if (el) el.textContent = now.toLocaleTimeString("pt-BR");
-}
-
-// ==============================
-// 🚀 Inicialização ÚNICA
+// 🚀 INIT
 // ==============================
 document.addEventListener("DOMContentLoaded", async () => {
   await wakeUpAPI();
-  loadSchedule();
+  await loadSchedule();
 
-  setInterval(() => {
-    const newPeriod = detectCurrentPeriod();
-    if (newPeriod !== currentPeriod) {
-      currentPeriod = newPeriod;
-      loadSchedule();
-    }
-  }, 60000);
+  initDarkMode();
+  initClock();
 
-  updateClock();
-  setInterval(updateClock, 1000);
+  // Sidebar
+  document.getElementById("menuBtn")?.addEventListener("click", () => {
+    document.getElementById("sidebar")?.classList.remove("-translate-x-full");
+  });
 
-  // 🔹 Botão fechar overlay
-  const btn = document.getElementById("btnWakeOk");
-  const overlay = document.getElementById("overlayWakeup");
-
-  if (btn && overlay) {
-    btn.addEventListener("click", () => {
-      overlay.classList.add("opacity-0", "pointer-events-none");
-
-      setTimeout(() => {
-        overlay.style.display = "none";
-      }, 600);
-    });
-  }
+  document.getElementById("closeSidebar")?.addEventListener("click", () => {
+    document.getElementById("sidebar")?.classList.add("-translate-x-full");
+  });
 });
