@@ -34,12 +34,19 @@ async function loadSchedule() {
 // ==============================
 // 🕒 DETECTAR PERÍODO
 // ==============================
+// ==============================
+// 🕒 DETECTAR PERÍODO (Corrigido para Sexta)
+// ==============================
 function detectCurrentPeriod() {
   const now = new Date();
+  const day = now.getDay();
   const total = now.getHours() * 60 + now.getMinutes();
 
   if (total >= 360 && total < 775) return "morning";
-  if (total >= 775 && total < 1140) return "afternoon";
+  if (total >= 775 && total < 1140) {
+    // Se for sexta (5), retorna o período especial, senão o normal
+    return day === 5 ? "afternoonFriday" : "afternoon";
+  }
   return "night";
 }
 
@@ -130,7 +137,7 @@ function renderScheduleByPeriod(period) {
     "musica3.mp3": "🎵 My Lighthouse",
     "musica4.mp3": "🎵 Amor Teimoso",
     "musica5.mp3": "🎵 Minha vida e uma viagem",
-    "musica6.mp3": "🎵 A Biblia"
+    "musica6.mp3": "🎵 A Biblia",
   };
 
   // 🔹 Esconde todas as tabelas
@@ -142,39 +149,45 @@ function renderScheduleByPeriod(period) {
   const tableBody = document.getElementById(tableIds[period]);
   if (!tableBody) return;
 
+  // Esconde as outras e limpa
+  Object.values(tableIds).forEach((id) =>
+    document.getElementById(id)?.classList.add("hidden")
+  );
   tableBody.classList.remove("hidden");
   tableBody.innerHTML = "";
 
   const signals = schedule[period] || [];
-
-  // 🔹 Atualiza o nome do período (UMA VEZ)
   const title = document.getElementById("currentPeriodName");
-  if (title) {
-    title.textContent = getPeriodLabel(period);
-  }
+  if (title) title.textContent = getPeriodLabel(period);
 
-  // 🔹 Renderiza as linhas
   signals.forEach((signal, index) => {
     const row = document.createElement("tr");
 
+    // ID ÚNICO para podermos achar a linha quando o sinal tocar
+    const rowId = `row-${signal.time.replace(":", "-")}`;
+    row.id = rowId;
+
     row.className =
       index % 2 === 0
-        ? "bg-slate-50 dark:bg-slate-800"
-        : "bg-white dark:bg-slate-900";
+        ? "bg-slate-50 dark:bg-slate-800 transition-colors"
+        : "bg-white dark:bg-slate-900 transition-colors";
 
     const friendlyMusic =
       musicLabels[signal.music] || signal.music || "🔔 Sino Padrão";
 
     row.innerHTML = `
-    <td class="py-3 px-4">${signal.time}</td>
-    <td class="py-3 px-4 font-medium">${signal.name}</td>
-    <td class="py-3 px-4">${friendlyMusic}</td>
-    <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
-  `;
-
+      <td class="py-3 px-4 w-10 text-center">
+        <i class="fas fa-volume-up playing-icon"></i>
+      </td>
+      <td class="py-3 px-4 font-bold">${signal.time}</td>
+      <td class="py-3 px-4 font-medium">${signal.name}</td>
+      <td class="py-3 px-4 text-slate-500">${friendlyMusic}</td>
+      <td class="py-3 px-4">${signal.duration ? signal.duration + "s" : ""}</td>
+    `;
     tableBody.appendChild(row);
   });
 }
+
 function getPeriodLabel(period) {
   const labels = {
     morning: "Período da Manhã ☀️",
@@ -214,17 +227,23 @@ function startScheduler() {
 }
 
 // ==============================
-// 📅 SINAIS DO DIA
+// 📅 SINAIS DO DIA (Corrigido o conflito de Duplicidade)
 // ==============================
 function getAllSignalsForToday() {
   const now = new Date();
   const day = now.getDay();
+  const isFriday = day === 5;
 
-  let periods = ["morning", "afternoon"];
-  if (day === 5) periods.push("afternoonFriday");
+  // Criamos a lista de períodos sem duplicar a tarde
+  let periods = ["morning"];
+
+  if (isFriday) {
+    periods.push("afternoonFriday"); // Na sexta, entra SÓ a especial
+  } else {
+    periods.push("afternoon"); // Dias normais, entra a tarde padrão
+  }
 
   let result = [];
-
   periods.forEach((period) => {
     (schedule[period] || []).forEach((signal) => {
       const [h, m] = signal.time.split(":").map(Number);
@@ -237,7 +256,6 @@ function getAllSignalsForToday() {
 
   return result;
 }
-
 // ==============================
 // 🔔 TOCAR
 // ==============================
@@ -247,12 +265,21 @@ function tocarSinal(signal) {
 
   sinaisTocadosHoje.add(id);
 
-  if (typeof triggerSignalAnimation === "function") {
-    triggerSignalAnimation();
+  // --- ATIVAR ÍCONE NA TABELA ---
+  const rowId = `row-${signal.time.replace(":", "-")}`;
+  const rowElement = document.getElementById(rowId);
+
+  if (rowElement) {
+    rowElement.classList.add("row-playing");
+
+    // Remove o destaque após o tempo da música (ou 15s padrão)
+    const duration = (signal.duration || 15) * 1000;
+    setTimeout(() => {
+      rowElement.classList.remove("row-playing");
+    }, duration);
   }
 
   initAudio(signal.music, signal.duration);
-
   setTimeout(startScheduler, 500);
 }
 
@@ -397,6 +424,52 @@ async function wakeUpAPI() {
     console.error("Wake error:", err);
   }
 }
+
+// ==============================
+// 🕹️ CONTROLE MANUAL
+// ==============================
+document
+  .getElementById("btnManualPlay")
+  ?.addEventListener("click", function () {
+    const music = document.getElementById("manualMusic").value;
+    const duration =
+      parseInt(document.getElementById("manualDuration").value) || 12;
+    const btn = this;
+
+    // 1. Bloqueia o botão temporariamente
+    btn.disabled = true;
+    btn.classList.replace("bg-blue-600", "bg-slate-500");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-spinner animate-spin"></i> TOCANDO...`;
+
+    // 2. Atualiza os cards de status na interface
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    const now = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    set("currentSignalTime", now);
+    set("currentSignalName", "Acionamento Manual (Backup)");
+
+    // 3. Executa o áudio usando sua função original
+    initAudio(music, duration);
+
+    // 4. Feedback visual no ícone do sino (header)
+    const bell = document.getElementById("bellIcon");
+    bell?.classList.add("animate-bounce");
+
+    // 5. Libera o botão após a duração
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.replace("bg-slate-500", "bg-blue-600");
+      btn.innerHTML = originalText;
+      bell?.classList.remove("animate-bounce");
+    }, duration * 1000);
+  });
 
 // ==============================
 // 🚀 INIT
