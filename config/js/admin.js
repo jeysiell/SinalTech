@@ -5,7 +5,10 @@ const musicLabels = {
   "musica1.mp3": "Tu me Sondas",
   "musica2.mp3": "Eu Amo a Minha Escola",
   "musica3.mp3": "My Lighthouse",
-  "musica4.mp3": "Amor Teimoso"
+  "musica4.mp3": "Amor Teimoso",
+  "musica5.mp3": "Minha vida e uma viagem",
+  "musica6.mp3": "A Biblia"
+
 };
 
 let modal;

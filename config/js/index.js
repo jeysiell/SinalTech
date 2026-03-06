@@ -129,7 +129,8 @@ function renderScheduleByPeriod(period) {
     "musica2.mp3": "🎵 Eu Amo Minha Escola",
     "musica3.mp3": "🎵 My Lighthouse",
     "musica4.mp3": "🎵 Amor Teimoso",
-    "sino.mp3": "🔔 Sino Padrão",
+    "musica5.mp3": "🎵 Minha vida e uma viagem",
+    "musica6.mp3": "🎵 A Biblia"
   };
 
   // 🔹 Esconde todas as tabelas
