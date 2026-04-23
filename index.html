@@ -3,14 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SinalTech Enterprise</title>
+    <title>SinalTech</title>
 
-    <!-- 🔧 Config Dark Mode -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = { darkMode: "class" };
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+              display: ['Sora', '"Plus Jakarta Sans"', "sans-serif"],
+            },
+            boxShadow: {
+              soft: "0 24px 50px -26px rgba(15,23,42,0.35)",
+            },
+          },
+        },
+      };
     </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
@@ -22,7 +40,7 @@
           background-color: #0f172a;
         }
         50% {
-          background-color: #1d4ed8;
+          background-color: #0ea5e9;
         }
         100% {
           background-color: #0f172a;
@@ -49,7 +67,6 @@
         animation: pulseScale 0.6s ease-in-out 3;
       }
 
-      /* Animação do ícone pulsando */
       @keyframes pulseAudio {
         0% {
           transform: scale(0.9);
@@ -66,14 +83,13 @@
       }
 
       .playing-icon {
-        display: none; /* Escondido por padrão */
-        color: #3b82f6;
+        display: none;
+        color: #0284c7;
         animation: pulseAudio 1s infinite;
       }
 
-      /* Quando a linha tiver a classe 'row-playing' */
       .row-playing {
-        background-color: rgba(59, 130, 246, 0.15) !important;
+        background-color: rgba(2, 132, 199, 0.14) !important;
         transition: all 0.3s ease;
       }
 
@@ -84,237 +100,483 @@
   </head>
 
   <body
-    class="bg-slate-100 dark:bg-slate-950 dark:text-white min-h-screen flex transition-colors duration-500"
+    class="min-h-screen bg-slate-100 text-slate-900 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100"
   >
-    <!-- ================= OVERLAY ================= -->
+    <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10">
+      <div
+        class="absolute -left-24 -top-36 h-96 w-96 rounded-full bg-cyan-300/25 blur-3xl dark:bg-cyan-500/15"
+      ></div>
+      <div
+        class="absolute -right-28 top-1/3 h-[28rem] w-[28rem] rounded-full bg-sky-200/35 blur-3xl dark:bg-sky-700/20"
+      ></div>
+    </div>
+
     <div
       id="overlayWakeup"
-      class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-50"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md"
     >
       <div
-        class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 w-[90%] max-w-md text-center space-y-6"
+        class="w-[92%] max-w-md rounded-3xl border border-white/10 bg-white/95 p-8 text-center shadow-2xl dark:border-slate-700 dark:bg-slate-900/95"
       >
         <div
           id="wakeIcon"
-          class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"
+          class="mx-auto h-14 w-14 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"
         ></div>
 
-        <div>
-          <h2 class="text-2xl font-bold dark:text-white">
-            Inicializando Sistema
-          </h2>
-          <p id="statusWake" class="text-slate-500 dark:text-slate-400 mt-2">
-            Conectando à API...
-          </p>
-        </div>
+        <h2 class="mt-6 font-display text-2xl font-bold">Inicializando Sistema</h2>
+        <p id="statusWake" class="mt-2 text-slate-500 dark:text-slate-400">
+          Conectando a API...
+        </p>
 
         <button
           id="btnWakeOk"
           disabled
-          class="w-full py-3 rounded-xl bg-slate-700 opacity-50 cursor-not-allowed text-white font-semibold transition"
+          class="mt-6 w-full rounded-xl bg-slate-700 py-3 font-semibold text-white opacity-50 transition cursor-not-allowed"
         >
           OK
         </button>
       </div>
     </div>
 
-    <!-- ================= SIDEBAR ================= -->
-    <aside
-      id="sidebar"
-      class="fixed md:static inset-y-0 left-0 w-64 bg-slate-900 text-white transform -translate-x-full md:translate-x-0 transition duration-300 z-40 flex flex-col"
-    >
-      <div
-        class="px-6 py-6 border-b border-slate-800 flex justify-between items-center"
+    <div class="flex min-h-screen">
+      <aside
+        id="sidebar"
+        class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-xl transition duration-300 dark:border-slate-800 dark:bg-slate-900/95 md:static md:translate-x-0"
       >
-        <h2 class="text-2xl font-bold">Sinal CAB</h2>
-        <button id="closeSidebar" class="md:hidden text-xl">✕</button>
-      </div>
-
-      <nav class="flex-1 px-4 py-6 space-y-2">
-        <a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800">
-          <i class="fas fa-chart-line"></i> Dashboard
-        </a>
-      </nav>
-    </aside>
-
-    <div class="flex-1 flex flex-col">
-      <!-- ================= HEADER ================= -->
-      <header
-        class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex justify-between items-center"
-      >
-        <div class="flex items-center gap-4">
-          <button id="menuBtn" class="md:hidden text-2xl">
-            <i class="fas fa-bars"></i>
-          </button>
-
-          <div
-            id="bellIcon"
-            class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-md"
-          >
-            <i class="fas fa-bell text-white"></i>
+        <div class="flex items-center justify-between border-b border-slate-200/80 px-6 py-6 dark:border-slate-800">
+          <div>
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              SinalTech
+            </p>
+            <h2 class="font-display text-2xl font-extrabold">Sinal CAB</h2>
           </div>
-
-          <h1 class="text-xl font-semibold dark:text-white">
-            Painel de Controle
-          </h1>
-        </div>
-
-        <div class="flex items-center gap-6">
-          <div class="text-sm bg-slate-900 text-white px-4 py-2 rounded-lg">
-            Próximo em:
-            <span id="countdown" class="font-bold ml-1">--:--</span>
-          </div>
-
-          <!-- 🌙 DARK MODE -->
           <button
-            id="darkToggle"
-            class="bg-slate-200 dark:bg-slate-800 px-3 py-2 rounded-lg transition"
+            id="closeSidebar"
+            class="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 md:hidden"
+            aria-label="Fechar menu"
           >
-            🌙
+            <i class="fas fa-times"></i>
           </button>
-
-          <div class="text-lg font-semibold dark:text-white">
-            <span id="currentTime">--:--:--</span>
-          </div>
         </div>
-      </header>
 
-      <!-- ================= MAIN ================= -->
-      <main class="flex-1 p-8 space-y-8">
-        <section
-          class="bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-800 rounded-xl p-6 mb-8"
+        <nav class="flex-1 space-y-2 px-4 py-6">
+          <a
+            id="navDashboard"
+            href="#"
+            class="flex items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-soft dark:bg-slate-800"
+          >
+            <i class="fas fa-chart-line"></i>
+            Dashboard
+          </a>
+          <a
+            id="navConfig"
+            href="#"
+            class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <i class="fas fa-sliders-h"></i>
+            Configurações
+          </a>
+        </nav>
+
+
+      </aside>
+
+      <div class="flex flex-1 flex-col">
+        <header
+          class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/75"
         >
-          <div class="flex items-center gap-3 mb-4">
-            <i class="fas fa-hand-pointer text-blue-500"></i>
-            <h3 class="text-lg font-bold">Acionamento Manual</h3>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label
-                class="block text-xs uppercase text-slate-500 mb-2 font-semibold"
-                >Escolher Som</label
-              >
-              <select
-                id="manualMusic"
-                class="w-full px-4 py-2.5 rounded-lg border dark:bg-slate-800 dark:border-slate-700"
-              >
-                <option value="musica1.mp3">🎵 Tu Me Sondas</option>
-                <option value="musica2.mp3">🎵 Eu Amo Minha Escola</option>
-                <option value="musica3.mp3">🎵 My Lighthouse</option>
-                <option value="musica4.mp3">🎵 Amor Teimoso</option>
-                <option value="musica5.mp3">🎵 Minha vida e uma viagem</option>
-                <option value="musica6.mp3">🎵 A Biblia</option>
-              </select>
-            </div>
-
-            <div>
-              <label
-                class="block text-xs uppercase text-slate-500 mb-2 font-semibold"
-                >Duração (segundos)</label
-              >
-              <input
-                id="manualDuration"
-                type="number"
-                value="12"
-                min="1"
-                max="60"
-                readonly
-                class="w-full px-4 py-2.5 rounded-lg border bg-slate-100 dark:bg-slate-800/50 dark:border-slate-700 cursor-not-allowed outline-none"
-              />
-            </div>
-
-            <div class="flex items-end">
+          <div
+            class="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8"
+          >
+            <div class="flex items-center gap-3">
               <button
-                id="btnManualPlay"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+                id="menuBtn"
+                class="rounded-xl p-2 text-2xl text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
+                aria-label="Abrir menu"
               >
-                <i class="fas fa-play"></i> Tocar Sinal Agora
+                <i class="fas fa-bars"></i>
               </button>
-            </div>
-          </div>
-        </section>
-        <!-- STATUS CARDS -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div
-            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
-          >
-            <p class="text-xs uppercase tracking-wide text-slate-500">
-              Último Sinal
-            </p>
-            <h2 id="currentSignalTime" class="text-4xl font-bold mt-2">
-              --:--
-            </h2>
-            <p id="currentSignalName" class="text-slate-500 mt-2">
-              Aguardando...
-            </p>
-          </div>
 
-          <div
-            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
-          >
-            <p class="text-xs uppercase tracking-wide text-slate-500">
-              Próximo Sinal
-            </p>
-            <h2 id="nextSignalTime" class="text-4xl font-bold mt-2">--:--</h2>
-            <p id="nextSignalName" class="text-slate-500 mt-2">Carregando...</p>
-          </div>
-        </div>
-
-        <!-- TABELA -->
-        <div
-          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6"
-        >
-          <div
-            class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-          >
-            <h3 class="text-lg font-semibold dark:text-white">
-              Filtros de Sinais
-            </h3>
-
-            <div class="flex gap-3">
-              <select
-                id="periodFilter"
-                class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700"
+              <div
+                id="bellIcon"
+                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-soft"
               >
-                <option value="morning">Manhã</option>
-                <option value="afternoon">Tarde</option>
-                <option value="afternoonFriday">Sexta Especial</option>
-              </select>
+                <i class="fas fa-bell"></i>
+              </div>
 
-              <input
-                type="text"
-                id="searchSignal"
-                placeholder="Buscar por nome..."
-                class="px-4 py-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700"
-              />
+              <div>
+                <p
+                  id="pageEyebrow"
+                  class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400"
+                >
+                  Painel
+                </p>
+                <h1
+                  id="pageTitle"
+                  class="font-display text-xl font-bold sm:text-2xl"
+                >
+                  Controle de Sinais
+                </h1>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+              <div
+                class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm dark:border-slate-700 dark:bg-slate-900"
+              >
+                Proximo em:
+                <span id="countdown" class="ml-1 font-bold text-sky-600 dark:text-sky-300">
+                  --:--
+                </span>
+              </div>
+
+              <button
+                id="darkToggle"
+                class="rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold transition hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              >
+                🌙
+              </button>
+
+              <div
+                class="rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold shadow-sm dark:border-slate-700 dark:bg-slate-900"
+              >
+                <span id="currentTime">--:--:--</span>
+              </div>
             </div>
           </div>
+        </header>
 
-          <div class="overflow-x-auto">
-            <h2 id="currentPeriodName" class="text-xl font-bold mb-4"></h2>
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+          <section id="dashboardSection" class="space-y-6">
+            <section class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+              <div
+                class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div class="mb-5 flex items-center gap-3">
+                  <div
+                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                  >
+                    <i class="fas fa-hand-pointer"></i>
+                  </div>
+                  <div>
+                    <p
+                      class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    >
+                      Manual
+                    </p>
+                    <h3 class="font-display text-lg font-bold">Acionamento Manual</h3>
+                  </div>
+                </div>
 
-            <table class="w-full text-sm border-collapse">
-              <thead class="border-b border-slate-200 dark:border-slate-800">
-                <tr class="text-left">
-                  <th class="py-3 w-12">Status</th>
-                  <th class="py-3">Hora</th>
-                  <th>Nome</th>
-                  <th>Música</th>
-                  <th>Duração</th>
-                </tr>
-              </thead>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div>
+                    <label
+                      class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    >
+                      Escolher Som
+                    </label>
+                    <select
+                      id="manualMusic"
+                      class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+                    >
+                      <option value="musica1.mp3">Tu Me Sondas</option>
+                      <option value="musica2.mp3">Eu Amo Minha Escola</option>
+                      <option value="musica3.mp3">My Lighthouse</option>
+                      <option value="musica4.mp3">Amor Teimoso</option>
+                      <option value="musica5.mp3">Minha vida e uma viagem</option>
+                      <option value="musica6.mp3">A Biblia</option>
+                    </select>
+                  </div>
 
-              <tbody id="scheduleTable-morning"></tbody>
-              <tbody id="scheduleTable-afternoon" class="hidden"></tbody>
-              <tbody id="scheduleTable-afternoonFriday" class="hidden"></tbody>
-            </table>
-          </div>
-        </div>
-      </main>
+                  <div>
+                    <label
+                      class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    >
+                      Duracao (segundos)
+                    </label>
+                    <input
+                      id="manualDuration"
+                      type="number"
+                      value="12"
+                      min="1"
+                      max="60"
+                      readonly
+                      class="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+                    />
+                  </div>
+
+                  <div class="flex items-end">
+                    <button
+                      id="btnManualPlay"
+                      class="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+                    >
+                      <i class="fas fa-play mr-2"></i>Tocar Sinal Agora
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-1">
+                <div
+                  class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Ultimo Sinal
+                  </p>
+                  <h2
+                    id="currentSignalTime"
+                    class="mt-3 font-display text-4xl font-extrabold"
+                  >
+                    --:--
+                  </h2>
+                  <p
+                    id="currentSignalName"
+                    class="mt-2 text-sm text-slate-500 dark:text-slate-400"
+                  >
+                    Aguardando...
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Proximo Sinal
+                  </p>
+                  <h2
+                    id="nextSignalTime"
+                    class="mt-3 font-display text-4xl font-extrabold"
+                  >
+                    --:--
+                  </h2>
+                  <p id="nextSignalName" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Carregando...
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900"
+            >
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Agenda
+                  </p>
+                  <h3 class="font-display text-lg font-bold">Filtros de Sinais</h3>
+                </div>
+
+                <div class="flex flex-col gap-3 sm:flex-row">
+                  <select
+                    id="periodFilter"
+                    class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+                  >
+                    <option value="morning">Manha</option>
+                    <option value="afternoon">Tarde</option>
+                    <option value="afternoonFriday">Sexta Especial</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    id="searchSignal"
+                    placeholder="Buscar por nome..."
+                    class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-6 overflow-x-auto">
+                <h2
+                  id="currentPeriodName"
+                  class="mb-4 font-display text-lg font-bold text-slate-800 dark:text-slate-100"
+                ></h2>
+
+                <table class="w-full min-w-[720px] border-collapse text-sm">
+                  <thead class="border-b border-slate-200 text-left dark:border-slate-800">
+                    <tr class="text-slate-500 dark:text-slate-400">
+                      <th class="py-3 w-12">Status</th>
+                      <th class="py-3">Hora</th>
+                      <th class="py-3">Nome</th>
+                      <th class="py-3">Musica</th>
+                      <th class="py-3">Duracao</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="scheduleTable-morning"></tbody>
+                  <tbody id="scheduleTable-afternoon" class="hidden"></tbody>
+                  <tbody id="scheduleTable-afternoonFriday" class="hidden"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section id="configSection" class="hidden space-y-6">
+            <section
+              class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900"
+            >
+              <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Administracao
+                  </p>
+                  <h3 class="font-display text-xl font-bold">Gerenciar Horarios</h3>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                  <span
+                    id="configCurrentTime"
+                    class="rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white"
+                  >
+                    --:--:--
+                  </span>
+                  <button
+                    id="configBtn"
+                    class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    <i class="fas fa-plus mr-2"></i>Novo
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-5 flex gap-3">
+                <select
+                  id="configFilterPeriod"
+                  class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+                >
+                  <option value="all">Todos os Periodos</option>
+                  <option value="morning">Manha</option>
+                  <option value="afternoon">Tarde</option>
+                  <option value="afternoonFriday">Tarde de Sexta</option>
+                </select>
+              </div>
+            </section>
+
+            <section
+              class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900"
+            >
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-slate-100 text-left dark:bg-slate-800">
+                    <tr>
+                      <th class="px-4 py-3">Periodo</th>
+                      <th class="px-4 py-3">Hora</th>
+                      <th class="px-4 py-3">Descricao</th>
+                      <th class="px-4 py-3">Musica</th>
+                      <th class="px-4 py-3">Duracao</th>
+                      <th class="px-4 py-3 text-center">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="configScheduleTable"
+                    class="divide-y divide-slate-200 dark:divide-slate-800"
+                  >
+                    <tr>
+                      <td colspan="6" class="py-6 text-center text-slate-500">
+                        Abra a aba de configuracoes para carregar os horarios
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        </main>
+      </div>
     </div>
 
-    <!-- ================= JS ================= -->
+    <div
+      id="configModal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/55 px-4"
+    >
+      <div
+        id="modalContent"
+        class="w-full max-w-lg scale-95 rounded-2xl border border-slate-200 bg-white p-6 opacity-0 shadow-2xl transition-all duration-200 dark:border-slate-700 dark:bg-slate-900"
+      >
+        <h3 id="modalTitle" class="mb-4 font-display text-xl font-bold">Novo Horario</h3>
+
+        <form id="scheduleForm" class="space-y-4">
+          <input type="hidden" id="editMode" value="false" />
+          <input type="hidden" id="editPeriod" />
+          <input type="hidden" id="editTimeOriginal" />
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Periodo</label>
+            <select
+              id="periodSelect"
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+            >
+              <option value="morning">Manha</option>
+              <option value="afternoon">Tarde</option>
+              <option value="afternoonFriday">Tarde de Sexta</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Horario</label>
+            <input
+              type="time"
+              id="timeInput"
+              required
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Descricao</label>
+            <input
+              type="text"
+              id="nameInput"
+              required
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Musica</label>
+            <select
+              id="musicSelect"
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+            >
+              <option value="musica1.mp3">Tu me Sondas</option>
+              <option value="musica2.mp3">Eu Amo a Minha Escola</option>
+              <option value="musica3.mp3">My Lighthouse</option>
+              <option value="musica4.mp3">Amor Teimoso</option>
+              <option value="musica5.mp3">Minha vida e uma viagem</option>
+              <option value="musica6.mp3">A Biblia</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium">Duracao</label>
+            <select
+              id="durationSelect"
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:focus:border-sky-400 dark:focus:ring-sky-900/50"
+            >
+              <option value="15">15 segundos</option>
+            </select>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-3">
+            <button
+              type="button"
+              id="cancelConfigBtn"
+              class="rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script src="./config/js/index.js"></script>
+    <script src="./config/js/config-section.js"></script>
   </body>
 </html>
