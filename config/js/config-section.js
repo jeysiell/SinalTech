@@ -76,14 +76,14 @@
     setNavState(navConfig, showConfig);
 
     if (showConfig) {
-      if (pageEyebrow) pageEyebrow.textContent = "Admin";
-      if (pageTitle) pageTitle.textContent = "Configuracoes de Horarios";
+      if (pageEyebrow) pageEyebrow.textContent = "";
+      if (pageTitle) pageTitle.textContent = "Configurações";
       if (!configLoaded) {
         loadConfigSchedule();
       }
     } else {
-      if (pageEyebrow) pageEyebrow.textContent = "Painel";
-      if (pageTitle) pageTitle.textContent = "Controle de Sinais";
+      if (pageEyebrow) pageEyebrow.textContent = "";
+      if (pageTitle) pageTitle.textContent = "Sinais";
     }
 
     closeSidebarOnMobile();
